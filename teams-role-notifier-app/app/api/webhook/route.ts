@@ -10,6 +10,10 @@ export async function GET() {
 export async function POST(req: any) {
   const body = await req.json();
 
+  if (body.challenge) {
+    return NextResponse.json({ challenge: body.challenge });
+  }
+
   console.log("Webhook reçu :", body);
 
   return NextResponse.json({
