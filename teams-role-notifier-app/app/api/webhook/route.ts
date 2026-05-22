@@ -102,6 +102,60 @@ async function sendTeamsMessageToUser(
   };
 }
 
+async function sendTeamsMessageToGroup(
+  accessToken: string,
+  groupName: string,
+  message: string
+) {
+  const chatsResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me/chats?$expand=members",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const chatsData = await chatsResponse.json();
+
+  const targetGroup = chatsData.value.find((chat: any) => {
+    return chat.chatType === "group" && chat.topic === groupName;
+  });
+
+  if (!targetGroup) {
+    return {
+      success: false,
+      groupName,
+      error: `Groupe Teams introuvable : ${groupName}`,
+    };
+  }
+
+  const messageResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/chats/${targetGroup.id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        body: {
+          content: message,
+        },
+      }),
+    }
+  );
+
+  const messageData = await messageResponse.json();
+
+  return {
+    success: !messageData.error,
+    groupName,
+    chatId: targetGroup.id,
+    response: messageData,
+  };
+}
+
 export async function GET() {
   return NextResponse.json({
     success: true,
