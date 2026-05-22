@@ -304,27 +304,38 @@ const integrateur = targetUsers.find(
     event.value?.label?.text ||
     "Statut inconnu";
 
-  let usersToNotify: any[] = [];
-let notifyGroup = false;
+const notificationRules: any = {
+  "Bloqué": {
+    users: ["Leader", "Intégrateur"],
+    groups: ["CDP Intégration"],
+  },
+  "Fait": {
+    users: ["Demandeur"],
+    groups: [],
+  },
+  "En cours": {
+    users: ["Leader"],
+    groups: [],
+  },
+};
 
-switch (statusText) {
-  case "Bloqué":
-    if (leader) usersToNotify.push(leader);
-    if (integrateur) usersToNotify.push(integrateur);
-    notifyGroup = true;
-    break;
+const currentRule = notificationRules[statusText];
 
-  case "Fait":
-    if (demandeur) usersToNotify.push(demandeur);
-    break;
+let usersToNotify: any[] = [];
+let groupsToNotify: string[] = [];
 
-  case "En cours":
-    if (leader) usersToNotify.push(leader);
-    break;
+if (currentRule) {
+  usersToNotify = currentRule.users
+    .map((roleName: string) => {
+      if (roleName === "Demandeur") return demandeur;
+      if (roleName === "Leader") return leader;
+      if (roleName === "Intégrateur") return integrateur;
+      return null;
+    })
+    .filter(Boolean);
 
-  default:
-    usersToNotify = [];
-}  
+  groupsToNotify = currentRule.groups;
+} 
 
   const message = `🤖 Notification automatique monday
 
@@ -349,12 +360,13 @@ ${item.url}`;
     results.push(result);
   }
 
-  if (notifyGroup) {
+for (const groupName of groupsToNotify) {
   const groupResult = await sendTeamsMessageToGroup(
-  accessToken,
-  "CDP Intégration",
-  message
-);
+    accessToken,
+    groupName,
+    message
+  );
+
   results.push(groupResult);
 }
 
