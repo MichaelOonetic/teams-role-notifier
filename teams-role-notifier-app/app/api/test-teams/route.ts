@@ -28,19 +28,99 @@ async function getAccessToken() {
 }
 
 export async function GET() {
-  const targetEmail = "userData.data.users[0].email";
-  const tokenData = await getAccessToken();
+  return NextResponse.json({
+    success: true,
+    message: "Webhook GET OK",
+  });
+}
 
+export async function POST(req: any) {
+  const body = await req.json();
+
+  if (body.challenge) {
+    return NextResponse.json({ challenge: body.challenge });
+  }
+
+  const event = body.event;
+  const pulseId = event.pulseId;
+
+  const mondayToken = process.env.MONDAY_API_TOKEN!;
+
+  const itemQuery = `
+    query {
+      items(ids: ${pulseId}) {
+        id
+        name
+        url
+        column_values {
+          id
+          text
+          value
+          type
+        }
+      }
+    }
+  `;
+
+  const mondayResponse = await fetch("https://api.monday.com/v2", {
+    method: "POST",
+    headers: {
+      Authorization: mondayToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query: itemQuery }),
+  });
+
+  const mondayData = await mondayResponse.json();
+  const item = mondayData.data.items[0];
+
+  const personColumn = item.column_values.find(
+    (col: any) => col.type === "people"
+  );
+
+  if (!personColumn || !personColumn.value) {
+    return NextResponse.json({
+      success: false,
+      message: "Aucune personne trouvée dans l’item monday",
+    });
+  }
+
+  const peopleValue = JSON.parse(personColumn.value);
+  const mondayUserId = peopleValue.personsAndTeams[0].id;
+
+  const userQuery = `
+    query {
+      users(ids: ${mondayUserId}) {
+        id
+        name
+        email
+      }
+    }
+  `;
+
+  const userResponse = await fetch("https://api.monday.com/v2", {
+    method: "POST",
+    headers: {
+      Authorization: mondayToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query: userQuery }),
+  });
+
+  const userData = await userResponse.json();
+  const targetEmail = userData.data.users[0].email;
+
+  const tokenData = await getAccessToken();
   const accessToken = tokenData.access_token;
 
   if (!accessToken) {
     return NextResponse.json({
       success: false,
+      message: "Token Microsoft impossible à récupérer",
       error: tokenData,
     });
   }
 
-  // Liste des chats existants
   const chatsResponse = await fetch(
     "https://graph.microsoft.com/v1.0/me/chats?$expand=members",
     {
@@ -52,26 +132,28 @@ export async function GET() {
 
   const chatsData = await chatsResponse.json();
 
-  // Recherche du chat avec Mickael
-    const targetChat = chatsData.value.find((chat: any) => {
+  const targetChat = chatsData.value.find((chat: any) => {
     if (chat.chatType !== "oneOnOne") return false;
 
     return chat.members?.some(
-        (member: any) =>
+      (member: any) =>
         member.email &&
         member.email.toLowerCase() === targetEmail.toLowerCase()
     );
-    });
+  });
 
   if (!targetChat) {
     return NextResponse.json({
       success: false,
-      message: "Chat Teams avec Mickael introuvable",
-      chats: chatsData,
+      message: `Chat Teams privé introuvable pour ${targetEmail}`,
     });
   }
 
-  // Envoi du message
+  const statusText =
+    item.column_values.find((col: any) => col.id === "status")?.text ||
+    event.value?.label?.text ||
+    "Statut inconnu";
+
   const messageResponse = await fetch(
     `https://graph.microsoft.com/v1.0/chats/${targetChat.id}/messages`,
     {
@@ -82,11 +164,12 @@ export async function GET() {
       },
       body: JSON.stringify({
         body: {
-          content:
-  `🤖 Notification automatique monday
+          content: `🤖 Notification automatique monday
+
+Déclenchée par : utilisateur monday ${event.userId}
 
 Item : ${item.name}
-Statut : ${item.column_values.find((col: any) => col.id === "status")?.text}
+Statut : ${statusText}
 
 ${item.url}`,
         },
@@ -98,7 +181,8 @@ ${item.url}`,
 
   return NextResponse.json({
     success: true,
-    chatId: targetChat.id,
+    sentTo: targetEmail,
+    item: item.name,
     message: messageData,
   });
 }
