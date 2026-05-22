@@ -300,6 +300,14 @@ ${item.url}`;
     results.push(result);
   }
 
+  const groupResult = await sendTeamsMessageToGroup(
+  accessToken,
+  "CDP Intégration",
+  message
+);
+
+results.push(groupResult);
+
   console.log("TEAMS NOTIFICATION RESULTS:", JSON.stringify(results, null, 2));
 
   return NextResponse.json({
