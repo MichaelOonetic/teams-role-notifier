@@ -52,12 +52,12 @@ export async function GET() {
   const chatsData = await chatsResponse.json();
 
   // Recherche du chat avec Mickael
-  const targetChat = chatsData.value.find((chat: any) =>
+    const targetChat = chatsData.value.find((chat: any) =>
+    chat.chatType === "oneOnOne" &&
     chat.members?.some((member: any) =>
-      member.email?.toLowerCase() ===
-      "mickael.chapusot@oonetic.com"
+        member.email?.toLowerCase() === "mickael.chapusot@oonetic.com"
     )
-  );
+    );
 
   if (!targetChat) {
     return NextResponse.json({
