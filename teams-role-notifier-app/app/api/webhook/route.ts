@@ -42,14 +42,13 @@ async function sendTeamsMessageToUser(
   const chatsData = await chatsResponse.json();
 
   const targetChat = chatsData.value.find((chat: any) => {
-    if (chat.chatType !== "oneOnOne") return false;
-
-    return chat.members?.some(
-      (member: any) =>
-        member.email &&
-        member.email.toLowerCase() === targetEmail.toLowerCase()
+  return chat.members?.some((member: any) => {
+    return (
+      member.email &&
+      member.email.toLowerCase() === targetEmail.toLowerCase()
     );
   });
+});
 
   if (!targetChat) {
     return {
