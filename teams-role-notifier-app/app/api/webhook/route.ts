@@ -40,6 +40,23 @@ async function sendTeamsMessageToUser(
   );
 
   const chatsData = await chatsResponse.json();
+  console.log(
+  "ONE ON ONE CHATS:",
+  JSON.stringify(
+    chatsData.value
+      .filter((chat: any) => chat.chatType === "oneOnOne")
+      .map((chat: any) => ({
+        id: chat.id,
+        members: chat.members?.map((member: any) => ({
+          displayName: member.displayName,
+          email: member.email,
+          userId: member.userId,
+        })),
+      })),
+    null,
+    2
+  )
+);
 
   const targetChat = chatsData.value.find((chat: any) => {
   if (chat.chatType !== "oneOnOne") return false;
