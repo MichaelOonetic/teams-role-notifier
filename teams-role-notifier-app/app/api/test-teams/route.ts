@@ -28,6 +28,7 @@ async function getAccessToken() {
 }
 
 export async function GET() {
+  const targetEmail = "mickael.chapusot@oonetic.com";
   const tokenData = await getAccessToken();
 
   const accessToken = tokenData.access_token;
@@ -55,7 +56,7 @@ export async function GET() {
     const targetChat = chatsData.value.find((chat: any) =>
     chat.chatType === "oneOnOne" &&
     chat.members?.some((member: any) =>
-        member.email?.toLowerCase() === "mickael.chapusot@oonetic.com"
+        member.email?.toLowerCase() === "targetEmail"
     )
     );
 
@@ -79,7 +80,7 @@ export async function GET() {
       body: JSON.stringify({
         body: {
           content:
-            "🚀 Premier message Teams envoyé automatiquement depuis monday + Vercel + Microsoft Graph",
+            "🚀 Deuxième message Teams envoyé automatiquement depuis monday + Vercel + Microsoft Graph",
         },
       }),
     }
