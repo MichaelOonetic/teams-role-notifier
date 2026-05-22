@@ -10,13 +10,16 @@ async function getAccessToken() {
     `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
         refresh_token: refreshToken,
         grant_type: "refresh_token",
-        scope: "openid profile offline_access User.Read Chat.ReadWrite ChatMessage.Send",
+        scope:
+          "openid profile offline_access User.Read Chat.ReadWrite ChatMessage.Send",
       }),
     }
   );
@@ -27,26 +30,74 @@ async function getAccessToken() {
 export async function GET() {
   const tokenData = await getAccessToken();
 
-  if (!tokenData.access_token) {
+  const accessToken = tokenData.access_token;
+
+  if (!accessToken) {
     return NextResponse.json({
       success: false,
       error: tokenData,
     });
   }
 
-  const me = await fetch("https://graph.microsoft.com/v1.0/me", {
-    headers: {
-      Authorization: `Bearer ${tokenData.access_token}`,
-    },
-  }).then((res) => res.json());
+  // Recherche de l'utilisateur Teams
+  const userSearch = await fetch(
+    "https://graph.microsoft.com/v1.0/users/mickael.chapusot@oonetic.com",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const targetUser = await userSearch.json();
+
+  // Création du chat
+  const chatResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/chats",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chatType: "oneOnOne",
+        members: [
+          {
+            "@odata.type": "#microsoft.graph.aadUserConversationMember",
+            roles: ["owner"],
+            "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${targetUser.id}`,
+          },
+        ],
+      }),
+    }
+  );
+
+  const chatData = await chatResponse.json();
+
+  // Envoi du message
+  const messageResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/chats/${chatData.id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        body: {
+          content:
+            "🚀 Premier message Teams envoyé depuis monday + Vercel + Microsoft Graph",
+        },
+      }),
+    }
+  );
+
+  const messageData = await messageResponse.json();
 
   return NextResponse.json({
     success: true,
-    message: "Token Microsoft OK",
-    user: {
-      displayName: me.displayName,
-      mail: me.mail,
-      userPrincipalName: me.userPrincipalName,
-    },
+    chat: chatData,
+    message: messageData,
   });
 }
