@@ -50,3 +50,4 @@ return NextResponse.json({
   access_token: tokenData.access_token,
   refresh_token: tokenData.refresh_token,
 });
+}
