@@ -53,15 +53,14 @@ export async function GET() {
   const chatsData = await chatsResponse.json();
 
   // Recherche du chat avec Mickael
-    const targetChat = chatsData.value.find((chat: any) => {
-    if (chat.chatType !== "oneOnOne") return false;
+const targetGroupName = "CDP Intégration";
 
-    return chat.members?.some(
-        (member: any) =>
-        member.email &&
-        member.email.toLowerCase() === targetEmail.toLowerCase()
-    );
-  });
+const targetChat = chatsData.value.find((chat: any) => {
+  return (
+    chat.chatType === "group" &&
+    chat.topic === targetGroupName
+  );
+});
 
   if (!targetChat) {
     return NextResponse.json({
@@ -83,7 +82,7 @@ export async function GET() {
       body: JSON.stringify({
         body: {
           content:
-            "🚀 Deuxième message Teams envoyé automatiquement depuis monday + Vercel + Microsoft Graph",
+            "🚀 Test message envoyé dans le groupe Teams CDP Intégration depuis monday + Vercel + Microsoft Graph",
         },
       }),
     }
