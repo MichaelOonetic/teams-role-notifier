@@ -33,9 +33,16 @@ export async function GET(req: Request) {
     }
   );
 
-  const tokenData = await tokenResponse.json();
+const tokenData = await tokenResponse.json();
 
-  console.log("Microsoft token response:", tokenData);
+if (!tokenData.access_token) {
+  return NextResponse.json({
+    success: false,
+    message: "Microsoft n'a pas renvoyé de token",
+    error: tokenData.error,
+    error_description: tokenData.error_description,
+  });
+}
 
 return NextResponse.json({
   success: true,
@@ -43,4 +50,3 @@ return NextResponse.json({
   access_token: tokenData.access_token,
   refresh_token: tokenData.refresh_token,
 });
-}
