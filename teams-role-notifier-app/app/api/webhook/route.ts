@@ -321,9 +321,6 @@ const notificationRules: any = {
 };
 
 const currentRule = notificationRules[statusText];
-console.log("CURRENT RULE:", JSON.stringify(currentRule, null, 2));
-console.log("USERS TO NOTIFY:", JSON.stringify(usersToNotify, null, 2));
-console.log("GROUPS TO NOTIFY:", JSON.stringify(groupsToNotify, null, 2));
 
 let usersToNotify: any[] = [];
 let groupsToNotify: string[] = [];
@@ -340,6 +337,10 @@ if (currentRule) {
 
   groupsToNotify = currentRule.groups;
 } 
+
+console.log("CURRENT RULE:", JSON.stringify(currentRule, null, 2));
+console.log("USERS TO NOTIFY:", JSON.stringify(usersToNotify, null, 2));
+console.log("GROUPS TO NOTIFY:", JSON.stringify(groupsToNotify, null, 2));
 
   const message = `🤖 Notification automatique monday
 
