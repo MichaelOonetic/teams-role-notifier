@@ -10,14 +10,12 @@ export async function GET() {
 export async function POST(req: any) {
   const body = await req.json();
 
-  if (body.challenge) {
-    return NextResponse.json({ challenge: body.challenge });
-  }
-
-  console.log("Webhook reçu :", body);
+  console.log(
+    "MONDAY WEBHOOK PAYLOAD:",
+    JSON.stringify(body, null, 2)
+  );
 
   return NextResponse.json({
     success: true,
-    message: "Webhook reçu avec succès",
   });
 }
