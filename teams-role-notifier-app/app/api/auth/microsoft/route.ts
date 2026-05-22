@@ -23,6 +23,7 @@ export async function GET() {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&response_mode=query` +
     `&scope=${encodeURIComponent(scopes)}`;
+    `&prompt=consent`;
 
   return NextResponse.redirect(authUrl);
 }
