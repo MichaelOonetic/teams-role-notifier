@@ -40,6 +40,12 @@ export async function GET() {
   }
 
   // Recherche de l'utilisateur Teams
+  const me = await fetch("https://graph.microsoft.com/v1.0/me", {
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+  },
+}).then((res) => res.json());
+
   const userSearch = await fetch(
     "https://graph.microsoft.com/v1.0/users/mickael.chapusot@oonetic.com",
     {
@@ -63,11 +69,16 @@ export async function GET() {
       body: JSON.stringify({
         chatType: "oneOnOne",
         members: [
-          {
+        {
+            "@odata.type": "#microsoft.graph.aadUserConversationMember",
+            roles: ["owner"],
+            "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${me.id}`,
+        },
+        {
             "@odata.type": "#microsoft.graph.aadUserConversationMember",
             roles: ["owner"],
             "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${targetUser.id}`,
-          },
+        },
         ],
       }),
     }
