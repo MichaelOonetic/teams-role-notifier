@@ -358,8 +358,6 @@ ${item.url}`;
   results.push(groupResult);
 }
 
-results.push(groupResult);
-
   console.log("TEAMS NOTIFICATION RESULTS:", JSON.stringify(results, null, 2));
 
   return NextResponse.json({
