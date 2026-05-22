@@ -28,7 +28,7 @@ async function getAccessToken() {
 }
 
 export async function GET() {
-  const targetEmail = "mickael.chapusot@oonetic.com";
+  const targetEmail = "userData.data.users[0].email";
   const tokenData = await getAccessToken();
 
   const accessToken = tokenData.access_token;
@@ -83,7 +83,12 @@ export async function GET() {
       body: JSON.stringify({
         body: {
           content:
-            "🚀 Test message depuis monday + Vercel + Microsoft Graph",
+  `🤖 Notification automatique monday
+
+Item : ${item.name}
+Statut : ${item.column_values.find((col: any) => col.id === "status")?.text}
+
+${item.url}`,
         },
       }),
     }
