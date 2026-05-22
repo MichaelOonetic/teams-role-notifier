@@ -53,14 +53,17 @@ export async function GET() {
   const chatsData = await chatsResponse.json();
 
   // Recherche du chat avec Mickael
-const targetGroupName = "CDP Intégration";
+    const targetEmail = "mickael.chapusot@oonetic.com";
 
-const targetChat = chatsData.value.find((chat: any) => {
-  return (
-    chat.chatType === "group" &&
-    chat.topic === targetGroupName
-  );
-});
+    const targetChat = chatsData.value.find((chat: any) => {
+    if (chat.chatType !== "oneOnOne") return false;
+
+    return chat.members?.some(
+        (member: any) =>
+        member.email &&
+        member.email.toLowerCase() === targetEmail.toLowerCase()
+    );
+    });
 
   if (!targetChat) {
     return NextResponse.json({
@@ -82,7 +85,7 @@ const targetChat = chatsData.value.find((chat: any) => {
       body: JSON.stringify({
         body: {
           content:
-            "🚀 Test message envoyé dans le groupe Teams CDP Intégration depuis monday + Vercel + Microsoft Graph",
+            "🚀 Test message depuis monday + Vercel + Microsoft Graph",
         },
       }),
     }
