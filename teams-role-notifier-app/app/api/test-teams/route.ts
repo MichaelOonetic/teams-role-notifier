@@ -39,15 +39,9 @@ export async function GET() {
     });
   }
 
-  // Recherche de l'utilisateur Teams
-  const me = await fetch("https://graph.microsoft.com/v1.0/me", {
-  headers: {
-    Authorization: `Bearer ${accessToken}`,
-  },
-}).then((res) => res.json());
-
-  const userSearch = await fetch(
-    "https://graph.microsoft.com/v1.0/users/mickael.chapusot@oonetic.com",
+  // Liste des chats existants
+  const chatsResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me/chats?$expand=members",
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -55,40 +49,27 @@ export async function GET() {
     }
   );
 
-  const targetUser = await userSearch.json();
+  const chatsData = await chatsResponse.json();
 
-  // Création du chat
-  const chatResponse = await fetch(
-    "https://graph.microsoft.com/v1.0/chats",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chatType: "oneOnOne",
-        members: [
-        {
-            "@odata.type": "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${me.id}`,
-        },
-        {
-            "@odata.type": "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${targetUser.id}`,
-        },
-        ],
-      }),
-    }
+  // Recherche du chat avec Mickael
+  const targetChat = chatsData.value.find((chat: any) =>
+    chat.members?.some((member: any) =>
+      member.email?.toLowerCase() ===
+      "mickael.chapusot@oonetic.com"
+    )
   );
 
-  const chatData = await chatResponse.json();
+  if (!targetChat) {
+    return NextResponse.json({
+      success: false,
+      message: "Chat Teams avec Mickael introuvable",
+      chats: chatsData,
+    });
+  }
 
   // Envoi du message
   const messageResponse = await fetch(
-    `https://graph.microsoft.com/v1.0/chats/${chatData.id}/messages`,
+    `https://graph.microsoft.com/v1.0/chats/${targetChat.id}/messages`,
     {
       method: "POST",
       headers: {
@@ -98,7 +79,7 @@ export async function GET() {
       body: JSON.stringify({
         body: {
           content:
-            "🚀 Premier message Teams envoyé depuis monday + Vercel + Microsoft Graph",
+            "🚀 Premier message Teams envoyé automatiquement depuis monday + Vercel + Microsoft Graph",
         },
       }),
     }
@@ -108,7 +89,7 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    chat: chatData,
+    chatId: targetChat.id,
     message: messageData,
   });
 }
