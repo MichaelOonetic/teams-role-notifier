@@ -53,12 +53,15 @@ export async function GET() {
   const chatsData = await chatsResponse.json();
 
   // Recherche du chat avec Mickael
-    const targetChat = chatsData.value.find((chat: any) =>
-    chat.chatType === "oneOnOne" &&
-    chat.members?.some((member: any) =>
-        member.email?.toLowerCase() === "targetEmail"
-    )
+    const targetChat = chatsData.value.find((chat: any) => {
+    if (chat.chatType !== "oneOnOne") return false;
+
+    return chat.members?.some(
+        (member: any) =>
+        member.email &&
+        member.email.toLowerCase() === targetEmail.toLowerCase()
     );
+  });
 
   if (!targetChat) {
     return NextResponse.json({
