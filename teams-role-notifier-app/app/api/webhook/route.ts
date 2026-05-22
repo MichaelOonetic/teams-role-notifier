@@ -10,9 +10,7 @@ async function getAccessToken() {
     `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
@@ -25,6 +23,66 @@ async function getAccessToken() {
   );
 
   return response.json();
+}
+
+async function sendTeamsMessageToUser(
+  accessToken: string,
+  targetEmail: string,
+  message: string
+) {
+  const chatsResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me/chats?$expand=members",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const chatsData = await chatsResponse.json();
+
+  const targetChat = chatsData.value.find((chat: any) => {
+    if (chat.chatType !== "oneOnOne") return false;
+
+    return chat.members?.some(
+      (member: any) =>
+        member.email &&
+        member.email.toLowerCase() === targetEmail.toLowerCase()
+    );
+  });
+
+  if (!targetChat) {
+    return {
+      success: false,
+      targetEmail,
+      error: `Chat Teams privé introuvable pour ${targetEmail}`,
+    };
+  }
+
+  const messageResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/chats/${targetChat.id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        body: {
+          content: message,
+        },
+      }),
+    }
+  );
+
+  const messageData = await messageResponse.json();
+
+  return {
+    success: !messageData.error,
+    targetEmail,
+    chatId: targetChat.id,
+    response: messageData,
+  };
 }
 
 export async function GET() {
@@ -56,6 +114,9 @@ export async function POST(req: any) {
           text
           value
           type
+          column {
+            title
+          }
         }
       }
     }
@@ -73,23 +134,40 @@ export async function POST(req: any) {
   const mondayData = await mondayResponse.json();
   const item = mondayData.data.items[0];
 
-  const personColumn = item.column_values.find(
-    (col: any) => col.type === "people"
-  );
+  const roleColumnNames = ["Demandeur", "Leader", "Intégrateur"];
+  const mondayUserIds: number[] = [];
 
-  if (!personColumn || !personColumn.value) {
+  for (const col of item.column_values) {
+    const columnTitle = col.column?.title;
+
+    if (col.type !== "people") continue;
+    if (!roleColumnNames.includes(columnTitle)) continue;
+    if (!col.value) continue;
+
+    const parsed = JSON.parse(col.value);
+
+    if (!parsed.personsAndTeams) continue;
+
+    for (const person of parsed.personsAndTeams) {
+      if (person.kind === "person") {
+        mondayUserIds.push(person.id);
+      }
+    }
+  }
+
+  const uniqueUserIds = [...new Set(mondayUserIds)];
+
+  if (uniqueUserIds.length === 0) {
     return NextResponse.json({
       success: false,
-      message: "Aucune personne trouvée dans l’item monday",
+      message:
+        "Aucun utilisateur trouvé dans les colonnes Demandeur, Leader ou Intégrateur",
     });
   }
 
-  const peopleValue = JSON.parse(personColumn.value);
-  const mondayUserId = peopleValue.personsAndTeams[0].id;
-
   const userQuery = `
     query {
-      users(ids: ${mondayUserId}) {
+      users(ids: [${uniqueUserIds.join(",")}]) {
         id
         name
         email
@@ -107,8 +185,7 @@ export async function POST(req: any) {
   });
 
   const userData = await userResponse.json();
-  const targetUser = userData.data.users[0];
-  const targetEmail = targetUser.email;
+  const targetUsers = userData.data.users;
 
   const tokenData = await getAccessToken();
   const accessToken = tokenData.access_token;
@@ -121,72 +198,42 @@ export async function POST(req: any) {
     });
   }
 
-  const chatsResponse = await fetch(
-    "https://graph.microsoft.com/v1.0/me/chats?$expand=members",
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
-
-  const chatsData = await chatsResponse.json();
-
-  const targetChat = chatsData.value.find((chat: any) => {
-    if (chat.chatType !== "oneOnOne") return false;
-
-    return chat.members?.some(
-      (member: any) =>
-        member.email &&
-        member.email.toLowerCase() === targetEmail.toLowerCase()
-    );
-  });
-
-  if (!targetChat) {
-    return NextResponse.json({
-      success: false,
-      message: `Chat Teams privé introuvable pour ${targetEmail}`,
-    });
-  }
-
   const statusText =
     item.column_values.find((col: any) => col.id === "status")?.text ||
     event.value?.label?.text ||
     "Statut inconnu";
 
-  const messageResponse = await fetch(
-    `https://graph.microsoft.com/v1.0/chats/${targetChat.id}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        body: {
-          content: `🤖 Notification automatique monday
+  const message = `🤖 Notification automatique monday
 
 Déclenchée par : utilisateur monday ${event.userId}
 
 Item : ${item.name}
 Statut : ${statusText}
 
-${item.url}`,
-        },
-      }),
-    }
-  );
+${item.url}`;
 
-  const messageData = await messageResponse.json();
+  const results = [];
 
-  console.log("TARGET EMAIL:", targetEmail);
-  console.log("TARGET CHAT:", targetChat?.id);
-  console.log("TEAMS MESSAGE RESPONSE:", JSON.stringify(messageData, null, 2));
+  for (const user of targetUsers) {
+    if (!user.email) continue;
+
+    const result = await sendTeamsMessageToUser(
+      accessToken,
+      user.email,
+      message
+    );
+
+    results.push(result);
+  }
+
+  console.log("TEAMS NOTIFICATION RESULTS:", JSON.stringify(results, null, 2));
 
   return NextResponse.json({
     success: true,
-    sentTo: targetEmail,
-    item: item.name,
-    message: messageData,
+    recipients: targetUsers.map((user: any) => ({
+      name: user.name,
+      email: user.email,
+    })),
+    results,
   });
 }
