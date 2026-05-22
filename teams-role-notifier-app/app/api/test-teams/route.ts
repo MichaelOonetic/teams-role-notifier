@@ -53,8 +53,6 @@ export async function GET() {
   const chatsData = await chatsResponse.json();
 
   // Recherche du chat avec Mickael
-    const targetEmail = "mickael.chapusot@oonetic.com";
-
     const targetChat = chatsData.value.find((chat: any) => {
     if (chat.chatType !== "oneOnOne") return false;
 
