@@ -47,7 +47,5 @@ if (!tokenData.access_token) {
 return NextResponse.json({
   success: true,
   message: "Microsoft connecté",
-  access_token: tokenData.access_token,
-  refresh_token: tokenData.refresh_token,
 });
 }
