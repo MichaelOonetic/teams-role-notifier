@@ -36,8 +36,10 @@ export async function GET(req: Request) {
 
   console.log("Microsoft token response:", tokenData);
 
-  return NextResponse.json({
-    success: true,
-    message: "Microsoft connecté et token reçu",
-  });
+return NextResponse.json({
+  success: true,
+  message: "Microsoft connecté",
+  access_token: tokenData.access_token,
+  refresh_token: tokenData.refresh_token,
+});
 }
