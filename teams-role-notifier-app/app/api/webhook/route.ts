@@ -133,7 +133,10 @@ export async function POST(req: any) {
 
   const mondayData = await mondayResponse.json();
   const item = mondayData.data.items[0];
-
+  console.log(
+  "ALL COLUMNS:",
+  JSON.stringify(item.column_values, null, 2)
+  );
   const roleColumnNames = ["Demandeur", "Leader", "Intégrateur"];
   const mondayUserIds: number[] = [];
 
