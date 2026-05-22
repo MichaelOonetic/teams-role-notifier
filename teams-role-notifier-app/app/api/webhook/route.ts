@@ -261,6 +261,33 @@ export async function POST(req: any) {
   const userData = await userResponse.json();
   const targetUsers = userData.data.users;
 
+  const demandeur = targetUsers.find(
+  (u: any) =>
+    item.column_values.find(
+      (c: any) =>
+        c.column?.title === "Demandeur" &&
+        c.text.includes(u.name)
+    )
+);
+
+const leader = targetUsers.find(
+  (u: any) =>
+    item.column_values.find(
+      (c: any) =>
+        c.column?.title === "Leader" &&
+        c.text.includes(u.name)
+    )
+);
+
+const integrateur = targetUsers.find(
+  (u: any) =>
+    item.column_values.find(
+      (c: any) =>
+        c.column?.title === "Intégrateur" &&
+        c.text.includes(u.name)
+    )
+);
+
   const tokenData = await getAccessToken();
   const accessToken = tokenData.access_token;
 
@@ -277,6 +304,28 @@ export async function POST(req: any) {
     event.value?.label?.text ||
     "Statut inconnu";
 
+  let usersToNotify: any[] = [];
+let notifyGroup = false;
+
+switch (statusText) {
+  case "Bloqué":
+    if (leader) usersToNotify.push(leader);
+    if (integrateur) usersToNotify.push(integrateur);
+    notifyGroup = true;
+    break;
+
+  case "Fait":
+    if (demandeur) usersToNotify.push(demandeur);
+    break;
+
+  case "En cours":
+    if (leader) usersToNotify.push(leader);
+    break;
+
+  default:
+    usersToNotify = [];
+}  
+
   const message = `🤖 Notification automatique monday
 
 Déclenchée par : utilisateur monday ${event.userId}
@@ -288,7 +337,7 @@ ${item.url}`;
 
   const results = [];
 
-  for (const user of targetUsers) {
+  for (const user of usersToNotify) {
     if (!user.email) continue;
 
     const result = await sendTeamsMessageToUser(
@@ -300,11 +349,14 @@ ${item.url}`;
     results.push(result);
   }
 
+  if (notifyGroup) {
   const groupResult = await sendTeamsMessageToGroup(
   accessToken,
   "CDP Intégration",
   message
 );
+  results.push(groupResult);
+}
 
 results.push(groupResult);
 
