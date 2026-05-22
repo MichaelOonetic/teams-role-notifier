@@ -303,7 +303,8 @@ const integrateur = targetUsers.find(
     item.column_values.find((col: any) => col.id === "status")?.text ||
     event.value?.label?.text ||
     "Statut inconnu";
-
+  console.log("STATUS TEXT:", statusText);
+  
 const notificationRules: any = {
   "Bloqué": {
     users: ["Leader", "Intégrateur"],
