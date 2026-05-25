@@ -68,6 +68,7 @@ async function sendTeamsMessageToUser(
       },
       body: JSON.stringify({
         body: {
+          contentType: "html",
           content: message,
         },
       }),
@@ -122,7 +123,8 @@ async function sendTeamsMessageToGroup(
       },
       body: JSON.stringify({
         body: {
-          content: message,
+        contentType: "html",
+        content: message,
         },
       }),
     }
@@ -299,32 +301,42 @@ const notificationRules: any = {
 };
 
 const messageTemplates: any = {
-  "Bloqué": `🚨 Notification automatique monday
+  "Bloqué": `
+    <h2>🚨 Item bloqué</h2>
 
-L’item est bloqué.
+    <p><strong>Item :</strong> ${item.name}</p>
+    <p><strong>Statut :</strong> ${statusText}</p>
 
-Item : ${item.name}
-Statut : ${statusText}
+    <p>
+      <a href="${item.url}">
+        Ouvrir dans monday
+      </a>
+    </p>
+  `,
 
-${item.url}`,
+  "Fait": `
+    <h2>✅ Item terminé</h2>
 
-  "Fait": `✅ Notification automatique monday
+    <p><strong>Item :</strong> ${item.name}</p>
 
-L’item est terminé.
+    <p>
+      <a href="${item.url}">
+        Voir l’item monday
+      </a>
+    </p>
+  `,
 
-Item : ${item.name}
-Statut : ${statusText}
+  "En cours": `
+    <h2>🟠 Item en cours</h2>
 
-${item.url}`,
+    <p><strong>Item :</strong> ${item.name}</p>
 
-  "En cours": `🟠 Notification automatique monday
-
-L’item est passé en cours.
-
-Item : ${item.name}
-Statut : ${statusText}
-
-${item.url}`,
+    <p>
+      <a href="${item.url}">
+        Ouvrir l’item
+      </a>
+    </p>
+  `,
 };
 
 const currentRule = notificationRules[statusText];
