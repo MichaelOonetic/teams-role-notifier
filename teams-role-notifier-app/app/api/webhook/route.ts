@@ -288,7 +288,7 @@ const integrateur = targetUsers.find(
 const notificationRules: any = {
   "Bloqué": {
     users: ["Leader", "Intégrateur"],
-    groups: ["CDP Intégration"],
+    groups: [],
   },
   "Fait": {
     users: ["Demandeur"],
