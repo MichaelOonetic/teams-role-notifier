@@ -298,6 +298,35 @@ const notificationRules: any = {
   },
 };
 
+const messageTemplates: any = {
+  "Bloqué": `🚨 Notification automatique monday
+
+L’item est bloqué.
+
+Item : ${item.name}
+Statut : ${statusText}
+
+${item.url}`,
+
+  "Fait": `✅ Notification automatique monday
+
+L’item est terminé.
+
+Item : ${item.name}
+Statut : ${statusText}
+
+${item.url}`,
+
+  "En cours": `🟠 Notification automatique monday
+
+L’item est passé en cours.
+
+Item : ${item.name}
+Statut : ${statusText}
+
+${item.url}`,
+};
+
 const currentRule = notificationRules[statusText];
 
 let usersToNotify: any[] = [];
@@ -316,9 +345,9 @@ if (currentRule) {
   groupsToNotify = currentRule.groups;
 } 
 
-  const message = `🤖 Notification automatique monday
-
-Déclenchée par : utilisateur monday ${event.userId}
+const message =
+  messageTemplates[statusText] ||
+  `🤖 Notification automatique monday
 
 Item : ${item.name}
 Statut : ${statusText}
