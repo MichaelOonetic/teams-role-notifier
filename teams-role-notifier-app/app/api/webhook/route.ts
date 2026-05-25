@@ -302,38 +302,38 @@ const notificationRules: any = {
 
 const messageTemplates: any = {
   "Bloqué": `
-    <h2>🚨 Item bloqué</h2>
+    <h2>🚨 Tâche bloquée</h2>
 
     <p><strong>Item :</strong> ${item.name}</p>
     <p><strong>Statut :</strong> ${statusText}</p>
 
     <p>
       <a href="${item.url}">
-        Ouvrir dans monday
+        Ouvrir la tâche sur Monday
       </a>
     </p>
   `,
 
   "Fait": `
-    <h2>✅ Item terminé</h2>
+    <h2>✅ Tâche terminée</h2>
 
     <p><strong>Item :</strong> ${item.name}</p>
 
     <p>
       <a href="${item.url}">
-        Voir l’item monday
+        Ouvrir la tâche sur Monday
       </a>
     </p>
   `,
 
   "En cours": `
-    <h2>🟠 Item en cours</h2>
+    <h2>🟠 Tâche en cours</h2>
 
     <p><strong>Item :</strong> ${item.name}</p>
 
     <p>
       <a href="${item.url}">
-        Ouvrir l’item
+        Ouvrir la tâche sur Monday
       </a>
     </p>
   `,
