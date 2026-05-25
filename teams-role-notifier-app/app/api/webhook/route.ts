@@ -302,7 +302,9 @@ const notificationRules: any = {
 
 const messageTemplates: any = {
   "Bloqué": `
-    <h2>⚠️ Tâche ${item.name} bloquée</h2>
+    <p>Hello,</p>
+    
+    <p>⚠️ la tâche <strong>${item.name}</strong> est bloquée</p>
 
     <p><strong>Item :</strong> ${item.name}</p>
     <p><strong>Statut :</strong> ${statusText}</p>
@@ -315,7 +317,8 @@ const messageTemplates: any = {
   `,
 
   "Fait": `
-    <h2>🚀 Tâche ${item.name} terminée</h2>
+    <p>Hello,</p>
+    <p>🚀 La tâche <strong>${item.name}</strong> est terminée</p>
 
     <p><strong>Item :</strong> ${item.name}</p>
 
@@ -327,7 +330,8 @@ const messageTemplates: any = {
   `,
 
   "En cours": `
-    <h2>🔃 Tâche ${item.name} en cours</h2>
+    <p>Hello,</p>
+    <p>🔃 Tâche <strong>${item.name}</strong> en cours</p>
 
     <p><strong>Item :</strong> ${item.name}</p>
 
