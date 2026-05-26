@@ -105,24 +105,25 @@ console.log(
 
   const mondayToken = process.env.MONDAY_API_TOKEN!;
 
-  const itemQuery = `
-    query {
-      boards(ids: ${boardId}) {
-        items_page(limit: 1) {
-          items {
+const itemQuery = `
+  query {
+    boards(ids: ${boardId}) {
+      items_page(limit: 1) {
+        items {
+          id
+          name
+          url
+          column_values {
             id
-            name
-            url
-            column_values(ids: ["${peopleColumnId}"]) {
-              id
-              text
-              value
-            }
+            text
+            type
+            value
           }
         }
       }
     }
-  `;
+  }
+`;
 
   const mondayResponse = await fetch("https://api.monday.com/v2", {
     method: "POST",
@@ -145,7 +146,9 @@ console.log(
   const item =
     mondayData.data.boards[0].items_page.items[0];
 
-  const peopleColumn = item.column_values[0];
+  const peopleColumn = item.column_values.find(
+  (col: any) => col.id === peopleColumnId
+);
 
   if (!peopleColumn?.value) {
     return NextResponse.json({
@@ -189,18 +192,56 @@ console.log(
   const tokenData = await getAccessToken();
   const accessToken = tokenData.access_token;
 
+  const statusColumn = item.column_values.find(
+  (col: any) => col.type === "status"
+);
+
+const statusText = statusColumn?.text || "";
+
   const triggerUuid =
   body.runtimeMetadata?.triggerUuid || "";
 
 let message = "";
 
-if (triggerUuid) {
+if (statusText === "Bloqué") {
+  message = `
+🚨 Élément bloqué
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else if (statusText === "En cours") {
+  message = `
+🟡 Élément en cours
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else if (statusText === "Fait") {
+  message = `
+✅ Élément terminé
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else {
   message = `
 📢 Notification Teams
 
 Item : ${item.name}
 
-👉 ${item.url}
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
 `;
 }
 
