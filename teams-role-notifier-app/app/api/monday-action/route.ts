@@ -90,6 +90,11 @@ async function sendTeamsMessageToUser(
 export async function POST(req: any) {
   const body = await req.json();
 
+console.log(
+  "MONDAY RUNTIME:",
+  JSON.stringify(body.runtimeMetadata, null, 2)
+);  
+
   console.log(
     "MONDAY ACTION PAYLOAD:",
     JSON.stringify(body, null, 2)
@@ -184,13 +189,20 @@ export async function POST(req: any) {
   const tokenData = await getAccessToken();
   const accessToken = tokenData.access_token;
 
-  const message = `
-    🤖 Notification Teams automatique
+  const triggerUuid =
+  body.runtimeMetadata?.triggerUuid || "";
 
-    Item : ${item.name}
+let message = "";
 
-    ${item.url}
-  `;
+if (triggerUuid) {
+  message = `
+📢 Notification Teams
+
+Item : ${item.name}
+
+👉 ${item.url}
+`;
+}
 
   const results = [];
 
