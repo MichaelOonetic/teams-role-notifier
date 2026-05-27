@@ -75,6 +75,14 @@ async function getTeamsUserId(
 
   const data = await response.json();
 
+  console.log("GRAPH USER:");
+  console.log(data);
+
+  return data.id;
+}
+
+  const data = await response.json();
+
   return data.id;
 }
 
