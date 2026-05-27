@@ -60,26 +60,58 @@ async function getTeamsUserId(token: string, email: string) {
   return data.id;
 }
 
-async function createChat(token: string, userId: string) {
-  const response = await fetch("https://graph.microsoft.com/v1.0/chats", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      chatType: "oneOnOne",
-      members: [
-        {
-          "@odata.type": "#microsoft.graph.aadUserConversationMember",
-          roles: ["owner"],
-          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${userId}')`,
-        },
-      ],
-    }),
-  });
+async function createChat(
+  token: string,
+  targetUserId: string
+) {
+  const senderEmail = process.env.TEAMS_SENDER_EMAIL!;
+
+  const senderUserId = await getTeamsUserId(
+    token,
+    senderEmail
+  );
+
+  const response = await fetch(
+    "https://graph.microsoft.com/v1.0/chats",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        chatType: "oneOnOne",
+        members: [
+          {
+            "@odata.type":
+              "#microsoft.graph.aadUserConversationMember",
+            roles: ["owner"],
+            "user@odata.bind":
+              `https://graph.microsoft.com/v1.0/users('${senderUserId}')`
+          },
+          {
+            "@odata.type":
+              "#microsoft.graph.aadUserConversationMember",
+            roles: ["owner"],
+            "user@odata.bind":
+              `https://graph.microsoft.com/v1.0/users('${targetUserId}')`
+          }
+        ]
+      })
+    }
+  );
 
   const data = await response.json();
+
+  console.log("CREATE CHAT RESPONSE:");
+  console.log(data);
+
+  if (!response.ok) {
+    throw new Error(
+      `Create chat failed: ${JSON.stringify(data)}`
+    );
+  }
+
   return data.id;
 }
 
