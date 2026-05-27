@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { sendTeamsMessage } from "@/lib/teams";
+
 export async function POST(req: NextRequest) {
 
   const body = await req.json();
@@ -13,6 +15,11 @@ export async function POST(req: NextRequest) {
       challenge: body.challenge
     });
   }
+
+  const message =
+    body.payload?.inputFields?.message;
+
+  await sendTeamsMessage(message);
 
   return NextResponse.json({
     success: true
