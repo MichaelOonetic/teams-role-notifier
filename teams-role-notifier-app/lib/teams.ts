@@ -115,19 +115,40 @@ async function createChat(
   return data.id;
 }
 
-async function sendMessageToChat(token: string, chatId: string, text: string) {
-  await fetch(`https://graph.microsoft.com/v1.0/chats/${chatId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      body: {
-        content: text,
+async function sendMessageToChat(
+  token: string,
+  chatId: string,
+  text: string
+) {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/chats/${chatId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
       },
-    }),
-  });
+      body: JSON.stringify({
+        body: {
+          contentType: "html",
+          content: text.replace(/\n/g, "<br>")
+        }
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  console.log("SEND MESSAGE RESPONSE:");
+  console.log(data);
+
+  if (!response.ok) {
+    throw new Error(
+      `Send message failed: ${JSON.stringify(data)}`
+    );
+  }
+
+  return data;
 }
 
 export async function sendTeamsMessage(mondayUserId: string, text: string) {
