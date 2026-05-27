@@ -19,7 +19,13 @@ export async function POST(req: NextRequest) {
   const message =
     body.payload?.inputFields?.message;
 
-  await sendTeamsMessage(message);
+  const person =
+  body.payload?.inputFields?.person;
+
+await sendTeamsMessage(
+  person,
+  message
+);
 
   return NextResponse.json({
     success: true
