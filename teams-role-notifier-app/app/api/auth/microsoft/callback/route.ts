@@ -1,35 +1,4 @@
 import { kv } from "@vercel/kv";
-const accessToken =
-  data.access_token;
-
-const refreshToken =
-  data.refresh_token;
-
-const meResponse = await fetch(
-  "https://graph.microsoft.com/v1.0/me",
-  {
-    headers: {
-      Authorization:
-        `Bearer ${accessToken}`
-    }
-  }
-);
-
-await kv.set(
-  `ms-refresh-token:${me.mail}`,
-  refreshToken
-);
-
-console.log(
-  "REFRESH TOKEN SAVED"
-);
-
-const me =
-  await meResponse.json();
-
-console.log("MICROSOFT ME:");
-console.log(me);
-
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -63,6 +32,30 @@ export async function GET(req: NextRequest) {
 
   console.log("MICROSOFT OAUTH CALLBACK:");
   console.log(data);
+
+  const accessToken = data.access_token;
+  const refreshToken = data.refresh_token;
+
+  const meResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+
+  const me = await meResponse.json();
+
+  console.log("MICROSOFT ME:");
+  console.log(me);
+
+  await kv.set(
+    `ms-refresh-token:${me.mail}`,
+    refreshToken
+  );
+
+  console.log("REFRESH TOKEN SAVED");
 
   return NextResponse.json({
     success: true,
