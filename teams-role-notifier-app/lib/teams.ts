@@ -1,21 +1,38 @@
-async function getAccessToken() {
+import { kv } from "@vercel/kv";
+export const runtime = "nodejs";
+
+async function getAccessTokenFromRefreshToken(refreshToken: string) {
   const response = await fetch(
     `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/x-www-form-urlencoded"
       },
       body: new URLSearchParams({
         client_id: process.env.AZURE_CLIENT_ID!,
         client_secret: process.env.AZURE_CLIENT_SECRET!,
-        scope: "https://graph.microsoft.com/.default",
-        grant_type: "client_credentials",
-      }),
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+        scope: [
+          "offline_access",
+          "User.Read",
+          "Chat.ReadWrite",
+          "ChatMessage.Send"
+        ].join(" ")
+      })
     }
   );
 
   const data = await response.json();
+
+  console.log("REFRESH TOKEN RESPONSE:");
+  console.log(data);
+
+  if (!response.ok) {
+    throw new Error(`Refresh token failed: ${JSON.stringify(data)}`);
+  }
+
   return data.access_token;
 }
 
@@ -33,12 +50,13 @@ async function getMondayUserEmail(mondayUserId: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: process.env.MONDAY_API_TOKEN!,
+      Authorization: process.env.MONDAY_API_TOKEN!
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query })
   });
 
   const data = await response.json();
+
   return data.data.users[0].email;
 }
 
@@ -47,8 +65,8 @@ async function getTeamsUserId(token: string, email: string) {
     `https://graph.microsoft.com/v1.0/users/${email}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization: `Bearer ${token}`
+      }
     }
   );
 
@@ -57,19 +75,29 @@ async function getTeamsUserId(token: string, email: string) {
   console.log("GRAPH USER:");
   console.log(data);
 
+  if (!response.ok) {
+    throw new Error(`Get Teams user failed: ${JSON.stringify(data)}`);
+  }
+
   return data.id;
 }
 
-async function createChat(
+async function createOrGetChat(
   token: string,
   targetUserId: string
 ) {
-  const senderEmail = process.env.TEAMS_SENDER_EMAIL!;
-
-  const senderUserId = await getTeamsUserId(
-    token,
-    senderEmail
+  const meResponse = await fetch(
+    "https://graph.microsoft.com/v1.0/me",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
   );
+
+  const me = await meResponse.json();
+
+  const senderUserId = me.id;
 
   const response = await fetch(
     "https://graph.microsoft.com/v1.0/chats",
@@ -107,9 +135,7 @@ async function createChat(
   console.log(data);
 
   if (!response.ok) {
-    throw new Error(
-      `Create chat failed: ${JSON.stringify(data)}`
-    );
+    throw new Error(`Create chat failed: ${JSON.stringify(data)}`);
   }
 
   return data.id;
@@ -143,33 +169,47 @@ async function sendMessageToChat(
   console.log(data);
 
   if (!response.ok) {
-    throw new Error(
-      `Send message failed: ${JSON.stringify(data)}`
-    );
+    throw new Error(`Send message failed: ${JSON.stringify(data)}`);
   }
 
   return data;
 }
 
-export async function sendTeamsMessage(mondayUserId: string, text: string) {
-  const token = await getAccessToken();
+export async function sendTeamsMessage(
+  mondayUserId: string,
+  text: string
+) {
+  const targetEmail = await getMondayUserEmail(mondayUserId);
 
-  const email = await getMondayUserEmail(mondayUserId);
+  console.log("TARGET EMAIL:");
+  console.log(targetEmail);
 
-  console.log("MONDAY EMAIL:");
-  console.log(email);
+  const senderEmail = process.env.TEAMS_SENDER_EMAIL!;
 
-  const teamsUserId = await getTeamsUserId(token, email);
+  const refreshToken = await kv.get<string>(
+    `ms-refresh-token:${senderEmail}`
+  );
 
-  console.log("TEAMS USER:");
-  console.log(teamsUserId);
+  if (!refreshToken) {
+    throw new Error(
+      `No refresh token found for sender: ${senderEmail}`
+    );
+  }
 
-  const chatId = await createChat(token, teamsUserId);
+  const delegatedToken =
+    await getAccessTokenFromRefreshToken(refreshToken);
 
-  console.log("CHAT ID:");
-  console.log(chatId);
+  const targetTeamsUserId =
+    await getTeamsUserId(delegatedToken, targetEmail);
 
-  await sendMessageToChat(token, chatId, text);
+  const chatId =
+    await createOrGetChat(delegatedToken, targetTeamsUserId);
 
-  console.log("MESSAGE SENT");
+  await sendMessageToChat(
+    delegatedToken,
+    chatId,
+    text
+  );
+
+  console.log("DELEGATED MESSAGE SENT");
 }
