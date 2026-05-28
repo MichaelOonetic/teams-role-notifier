@@ -16,14 +16,18 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const message =
-    body.payload?.inputFields?.message;
+const requester =
+  body.payload?.inputFields?.requester;
 
-  const person =
-  body.payload?.inputFields?.person;
+const integrator =
+  body.payload?.inputFields?.integrator;
+
+const message =
+  body.payload?.inputFields?.message;
 
 await sendTeamsMessage(
-  person,
+  String(requester.id),
+  String(integrator.id),
   message
 );
 
