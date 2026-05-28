@@ -219,3 +219,44 @@ const targetEmail =
 
   console.log("DELEGATED MESSAGE SENT");
 }
+
+async function getItemData(
+  itemId: string
+) {
+
+  const query = `
+    query {
+      items(ids: ${itemId}) {
+        id
+        name
+        url
+        board {
+          id
+          name
+        }
+      }
+    }
+  `;
+
+  const response = await fetch(
+    "https://api.monday.com/v2",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          process.env.MONDAY_API_TOKEN!
+      },
+      body: JSON.stringify({
+        query
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  console.log("MONDAY ITEM DATA:");
+  console.log(data);
+
+  return data.data.items[0];
+}

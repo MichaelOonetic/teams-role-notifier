@@ -4,6 +4,8 @@ import { sendTeamsMessage } from "@/lib/teams";
 
 import { renderTemplate } from "@/lib/render-template";
 
+import { getItemData } from "@/lib/teams";
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -25,13 +27,48 @@ export async function POST(req: NextRequest) {
 const itemId =
   body.runtimeMetadata?.hostMetadata?.hostInstanceId;
 
+const itemId =
+  body.payload?.pulseId ||
+  body.payload?.itemId ||
+  body.event?.pulseId ||
+  body.event?.itemId;  
+
+let itemData = null;
+
+if (itemId) {
+  itemData =
+    await getItemData(
+      String(itemId)
+    );
+}  
+
 const context = {
-  "requester.name": inputFields.requester?.name || "",
-  "integrator.name": inputFields.integrator?.name || "",
-  "item.id": itemId || "",
-  "item.url": itemId
-    ? `https://oonetic.monday.com/boards/${itemId}`
-    : ""
+
+  "requester.name":
+    inputFields.requester?.name || "",
+
+  "integrator.name":
+    inputFields.integrator?.name || "",
+
+  "item.id":
+    itemData?.id || "",
+
+  "item.name":
+    itemData?.name || "",
+
+  "item.url":
+    itemData?.url || "",
+
+  "board.id":
+    itemData?.board?.id || "",
+
+  "board.name":
+    itemData?.board?.name || "",
+
+  "board.url":
+    itemData?.board?.id
+      ? `https://oonetic.monday.com/boards/${itemData.board.id}`
+      : ""
 };
 
 const message = renderTemplate(
