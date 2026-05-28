@@ -28,8 +28,7 @@ scope: [
 
   const data = await response.json();
 
-  console.log("REFRESH TOKEN RESPONSE:");
-  console.log(data);
+  console.log("REFRESH TOKEN OK");
 
   if (!response.ok) {
     throw new Error(`Refresh token failed: ${JSON.stringify(data)}`);
