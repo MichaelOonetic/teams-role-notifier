@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { sendTeamsMessage } from "@/lib/teams";
 
+import { renderTemplate } from "@/lib/render-template";
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -18,7 +20,24 @@ export async function POST(req: NextRequest) {
 
   const requesterId = inputFields.requester?.id;
   const integratorId = inputFields.integrator?.id;
-  const message = inputFields.message;
+  const rawMessage = inputFields.message;
+
+const itemId =
+  body.runtimeMetadata?.hostMetadata?.hostInstanceId;
+
+const context = {
+  "requester.name": inputFields.requester?.name || "",
+  "integrator.name": inputFields.integrator?.name || "",
+  "item.id": itemId || "",
+  "item.url": itemId
+    ? `https://oonetic.monday.com/boards/${itemId}`
+    : ""
+};
+
+const message = renderTemplate(
+  rawMessage,
+  context
+);
 
   if (!requesterId || !integratorId || !message) {
     console.error("Missing required fields:", {
