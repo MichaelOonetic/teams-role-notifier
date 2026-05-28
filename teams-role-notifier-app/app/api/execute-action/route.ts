@@ -3,35 +3,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendTeamsMessage } from "@/lib/teams";
 
 export async function POST(req: NextRequest) {
-
   const body = await req.json();
 
   console.log("MONDAY PAYLOAD:");
   console.log(JSON.stringify(body, null, 2));
 
-  // Handshake Monday
   if (body.challenge) {
     return NextResponse.json({
-      challenge: body.challenge
+      challenge: body.challenge,
     });
   }
 
-const requester =
-  body.payload?.inputFields?.requester;
+  const inputFields = body.payload?.inputFields || {};
 
-const integrator =
-  body.payload?.inputFields?.integrator;
+  const requesterId = inputFields.requester?.id;
+  const integratorId = inputFields.integrator?.id;
+  const message = inputFields.message;
 
-const message =
-  body.payload?.inputFields?.message;
+  if (!requesterId || !integratorId || !message) {
+    console.error("Missing required fields:", {
+      requesterId,
+      integratorId,
+      message,
+    });
 
-await sendTeamsMessage(
-  String(requester.id),
-  String(integrator.id),
-  message
-);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Missing requester, integrator or message",
+      },
+      { status: 400 }
+    );
+  }
+
+  await sendTeamsMessage(
+    String(requesterId),
+    String(integratorId),
+    message
+  );
 
   return NextResponse.json({
-    success: true
+    success: true,
   });
 }
