@@ -14,12 +14,14 @@ async function getAccessTokenFromRefreshToken(refreshToken: string) {
         client_secret: process.env.AZURE_CLIENT_SECRET!,
         refresh_token: refreshToken,
         grant_type: "refresh_token",
-        scope: [
-          "offline_access",
-          "User.Read",
-          "Chat.ReadWrite",
-          "ChatMessage.Send"
-        ].join(" ")
+scope: [
+  "offline_access",
+  "User.Read",
+  "User.ReadBasic.All",
+  "Chat.ReadWrite",
+  "Chat.Create",
+  "ChatMessage.Send"
+].join(" ")
       })
     }
   );
