@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { sendTeamsMessage } from "@/lib/teams";
-
+import { sendTeamsMessage, getItemData } from "@/lib/teams";
 import { renderTemplate } from "@/lib/render-template";
-
-import { getItemData } from "@/lib/teams";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -24,65 +21,34 @@ export async function POST(req: NextRequest) {
   const integratorId = inputFields.integrator?.id;
   const rawMessage = inputFields.message;
 
-const itemId =
-  body.runtimeMetadata?.hostMetadata?.hostInstanceId;
+  const itemId =
+    body.payload?.pulseId ||
+    body.payload?.itemId ||
+    body.event?.pulseId ||
+    body.event?.itemId;
 
-const itemId =
-  body.payload?.pulseId ||
-  body.payload?.itemId ||
-  body.event?.pulseId ||
-  body.event?.itemId;  
+  let itemData = null;
 
-let itemData = null;
+  if (itemId) {
+    itemData = await getItemData(String(itemId));
+  }
 
-if (itemId) {
-  itemData =
-    await getItemData(
-      String(itemId)
-    );
-}  
-
-const context = {
-
-  "requester.name":
-    inputFields.requester?.name || "",
-
-  "integrator.name":
-    inputFields.integrator?.name || "",
-
-  "item.id":
-    itemData?.id || "",
-
-  "item.name":
-    itemData?.name || "",
-
-  "item.url":
-    itemData?.url || "",
-
-  "board.id":
-    itemData?.board?.id || "",
-
-  "board.name":
-    itemData?.board?.name || "",
-
-  "board.url":
-    itemData?.board?.id
+  const context = {
+    "requester.name": inputFields.requester?.name || "",
+    "integrator.name": inputFields.integrator?.name || "",
+    "item.id": itemData?.id || "",
+    "item.name": itemData?.name || "",
+    "item.url": itemData?.url || "",
+    "board.id": itemData?.board?.id || "",
+    "board.name": itemData?.board?.name || "",
+    "board.url": itemData?.board?.id
       ? `https://oonetic.monday.com/boards/${itemData.board.id}`
-      : ""
-};
+      : "",
+  };
 
-const message = renderTemplate(
-  rawMessage,
-  context
-);
+  const message = renderTemplate(rawMessage, context);
 
   if (!requesterId || !integratorId || !message) {
-    console.error("Missing required fields:", {
-      requesterId,
-      integratorId,
-      message,
-    });
-
     return NextResponse.json(
       {
         success: false,
