@@ -6,12 +6,14 @@ export async function GET() {
     response_type: "code",
     redirect_uri: process.env.MICROSOFT_REDIRECT_URI!,
     response_mode: "query",
-    scope: [
-      "offline_access",
-      "User.Read",
-      "Chat.ReadWrite",
-      "ChatMessage.Send"
-    ].join(" ")
+scope: [
+  "offline_access",
+  "User.Read",
+  "User.ReadBasic.All",
+  "Chat.ReadWrite",
+  "Chat.Create",
+  "ChatMessage.Send"
+].join(" ")
   });
 
   return NextResponse.redirect(
