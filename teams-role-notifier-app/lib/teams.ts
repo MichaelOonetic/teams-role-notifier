@@ -158,7 +158,7 @@ async function sendMessageToChat(
       body: JSON.stringify({
         body: {
           contentType: "html",
-          content: text.replace(/\n/g, "<br>")
+          content: linkify(text).replace(/\n/g, "<br>")
         }
       })
     }
@@ -259,4 +259,11 @@ export async function getItemData(
   console.log(data);
 
   return data.data.items[0];
+}
+
+function linkify(text: string) {
+  return text.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1">$1</a>'
+  );
 }
