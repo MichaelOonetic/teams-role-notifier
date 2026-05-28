@@ -178,15 +178,20 @@ async function sendMessageToChat(
 }
 
 export async function sendTeamsMessage(
-  mondayUserId: string,
+  requesterMondayUserId: string,
+  integratorMondayUserId: string,
   text: string
-) {
-  const targetEmail = await getMondayUserEmail(mondayUserId);
+){
+  const requesterEmail =
+  await getMondayUserEmail(requesterMondayUserId);
+
+const targetEmail =
+  await getMondayUserEmail(integratorMondayUserId);
 
   console.log("TARGET EMAIL:");
   console.log(targetEmail);
 
-  const senderEmail = process.env.TEAMS_SENDER_EMAIL!;
+  const senderEmail = requesterEmail;
 
   const refreshToken = await kv.get<string>(
     `ms-refresh-token:${senderEmail}`
