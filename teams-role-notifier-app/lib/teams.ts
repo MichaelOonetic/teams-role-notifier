@@ -220,7 +220,7 @@ const targetEmail =
   console.log("DELEGATED MESSAGE SENT");
 }
 
-async function getItemData(
+export async function getItemData(
   itemId: string
 ) {
 
