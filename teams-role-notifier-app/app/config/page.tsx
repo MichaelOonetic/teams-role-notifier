@@ -33,7 +33,8 @@ export default function ConfigPage() {
 
   useEffect(() => {
     monday.listen("context", (res) => {
-      const id = res.data?.boardId;
+      const data = res.data as any;
+      const id = data?.boardId;
 
       if (id) {
         setBoardId(id);
