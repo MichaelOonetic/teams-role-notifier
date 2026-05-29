@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+
 export const runtime = "nodejs";
 
 async function getAccessTokenFromRefreshToken(refreshToken: string) {
@@ -7,22 +8,22 @@ async function getAccessTokenFromRefreshToken(refreshToken: string) {
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         client_id: process.env.AZURE_CLIENT_ID!,
         client_secret: process.env.AZURE_CLIENT_SECRET!,
         refresh_token: refreshToken,
         grant_type: "refresh_token",
-scope: [
-  "offline_access",
-  "User.Read",
-  "User.ReadBasic.All",
-  "Chat.ReadWrite",
-  "Chat.Create",
-  "ChatMessage.Send"
-].join(" ")
-      })
+        scope: [
+          "offline_access",
+          "User.Read",
+          "User.ReadBasic.All",
+          "Chat.ReadWrite",
+          "Chat.Create",
+          "ChatMessage.Send",
+        ].join(" "),
+      }),
     }
   );
 
@@ -51,9 +52,9 @@ async function getMondayUserEmail(mondayUserId: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: process.env.MONDAY_API_TOKEN!
+      Authorization: process.env.MONDAY_API_TOKEN!,
     },
-    body: JSON.stringify({ query })
+    body: JSON.stringify({ query }),
   });
 
   const data = await response.json();
@@ -66,8 +67,8 @@ async function getTeamsUserId(token: string, email: string) {
     `https://graph.microsoft.com/v1.0/users/${email}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -83,52 +84,38 @@ async function getTeamsUserId(token: string, email: string) {
   return data.id;
 }
 
-async function createOrGetChat(
-  token: string,
-  targetUserId: string
-) {
-  const meResponse = await fetch(
-    "https://graph.microsoft.com/v1.0/me",
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  );
+async function createOrGetChat(token: string, targetUserId: string) {
+  const meResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   const me = await meResponse.json();
-
   const senderUserId = me.id;
 
-  const response = await fetch(
-    "https://graph.microsoft.com/v1.0/chats",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        chatType: "oneOnOne",
-        members: [
-          {
-            "@odata.type":
-              "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind":
-              `https://graph.microsoft.com/v1.0/users('${senderUserId}')`
-          },
-          {
-            "@odata.type":
-              "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind":
-              `https://graph.microsoft.com/v1.0/users('${targetUserId}')`
-          }
-        ]
-      })
-    }
-  );
+  const response = await fetch("https://graph.microsoft.com/v1.0/chats", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chatType: "oneOnOne",
+      members: [
+        {
+          "@odata.type": "#microsoft.graph.aadUserConversationMember",
+          roles: ["owner"],
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${senderUserId}')`,
+        },
+        {
+          "@odata.type": "#microsoft.graph.aadUserConversationMember",
+          roles: ["owner"],
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${targetUserId}')`,
+        },
+      ],
+    }),
+  });
 
   const data = await response.json();
 
@@ -142,6 +129,13 @@ async function createOrGetChat(
   return data.id;
 }
 
+function linkify(text: string) {
+  return text.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1">$1</a>'
+  );
+}
+
 async function sendMessageToChat(
   token: string,
   chatId: string,
@@ -153,14 +147,14 @@ async function sendMessageToChat(
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         body: {
           contentType: "html",
-          content: linkify(text).replace(/\n/g, "<br>")
-        }
-      })
+          content: linkify(text).replace(/\n/g, "<br>"),
+        },
+      }),
     }
   );
 
@@ -181,18 +175,15 @@ export async function sendTeamsMessage(
   recipientMondayUserIds: string[],
   text: string
 ) {
-  const requesterEmail =
-    await getMondayUserEmail(requesterMondayUserId);
-
-  const senderEmail = requesterEmail;
+  const requesterEmail = await getMondayUserEmail(requesterMondayUserId);
 
   const refreshToken = await kv.get<string>(
-    `ms-refresh-token:${senderEmail}`
+    `ms-refresh-token:${requesterEmail}`
   );
 
   if (!refreshToken) {
     throw new Error(
-      `No refresh token found for sender: ${senderEmail}`
+      `No refresh token found for sender: ${requesterEmail}`
     );
   }
 
@@ -200,50 +191,19 @@ export async function sendTeamsMessage(
     await getAccessTokenFromRefreshToken(refreshToken);
 
   for (const recipientMondayUserId of recipientMondayUserIds) {
-
-    const targetEmail =
-      await getMondayUserEmail(recipientMondayUserId);
+    const targetEmail = await getMondayUserEmail(recipientMondayUserId);
 
     console.log("TARGET EMAIL:");
     console.log(targetEmail);
 
     const targetTeamsUserId =
-      await getTeamsUserId(
-        delegatedToken,
-        targetEmail
-      );
+      await getTeamsUserId(delegatedToken, targetEmail);
 
     const chatId =
-      await createOrGetChat(
-        delegatedToken,
-        targetTeamsUserId
-      );
+      await createOrGetChat(delegatedToken, targetTeamsUserId);
 
-    await sendMessageToChat(
-      delegatedToken,
-      chatId,
-      text
-    );
+    await sendMessageToChat(delegatedToken, chatId, text);
   }
-
-  console.log(
-    "DELEGATED MESSAGE SENT"
-  );
-}
-  const delegatedToken =
-    await getAccessTokenFromRefreshToken(refreshToken);
-
-  const targetTeamsUserId =
-    await getTeamsUserId(delegatedToken, targetEmail);
-
-  const chatId =
-    await createOrGetChat(delegatedToken, targetTeamsUserId);
-
-  await sendMessageToChat(
-    delegatedToken,
-    chatId,
-    text
-  );
 
   console.log("DELEGATED MESSAGE SENT");
 }
@@ -298,11 +258,4 @@ export async function getItemData(itemId: string) {
   console.log(JSON.stringify(data, null, 2));
 
   return data.data.items[0];
-}
-
-function linkify(text: string) {
-  return text.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1">$1</a>'
-  );
 }
