@@ -152,7 +152,7 @@ async function sendMessageToChat(
       body: JSON.stringify({
         body: {
           contentType: "html",
-          content: linkify(text).replace(/\n/g, "<br>"),
+          content: text.replace(/\n/g, "<br>")
         },
       }),
     }
