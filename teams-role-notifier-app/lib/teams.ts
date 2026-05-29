@@ -178,17 +178,11 @@ async function sendMessageToChat(
 
 export async function sendTeamsMessage(
   requesterMondayUserId: string,
-  integratorMondayUserId: string,
+  recipientMondayUserIds: string[],
   text: string
-){
+) {
   const requesterEmail =
-  await getMondayUserEmail(requesterMondayUserId);
-
-const targetEmail =
-  await getMondayUserEmail(integratorMondayUserId);
-
-  console.log("TARGET EMAIL:");
-  console.log(targetEmail);
+    await getMondayUserEmail(requesterMondayUserId);
 
   const senderEmail = requesterEmail;
 
@@ -202,6 +196,40 @@ const targetEmail =
     );
   }
 
+  const delegatedToken =
+    await getAccessTokenFromRefreshToken(refreshToken);
+
+  for (const recipientMondayUserId of recipientMondayUserIds) {
+
+    const targetEmail =
+      await getMondayUserEmail(recipientMondayUserId);
+
+    console.log("TARGET EMAIL:");
+    console.log(targetEmail);
+
+    const targetTeamsUserId =
+      await getTeamsUserId(
+        delegatedToken,
+        targetEmail
+      );
+
+    const chatId =
+      await createOrGetChat(
+        delegatedToken,
+        targetTeamsUserId
+      );
+
+    await sendMessageToChat(
+      delegatedToken,
+      chatId,
+      text
+    );
+  }
+
+  console.log(
+    "DELEGATED MESSAGE SENT"
+  );
+}
   const delegatedToken =
     await getAccessTokenFromRefreshToken(refreshToken);
 

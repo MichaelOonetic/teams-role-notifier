@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
   const requesterId = inputFields.requester?.id;
   const integratorId = inputFields.integrator?.id;
+  const additionalRecipientId = inputFields.additionalRecipients?.id;
   const rawMessage = inputFields.message;
 
   const itemId =
@@ -58,11 +59,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await sendTeamsMessage(
-    String(requesterId),
-    String(integratorId),
-    message
-  );
+const recipientIds = [
+  integratorId,
+  additionalRecipientId
+].filter(Boolean).map(String);
+
+await sendTeamsMessage(
+  String(requesterId),
+  recipientIds,
+  message
+);
 
   return NextResponse.json({
     success: true,
