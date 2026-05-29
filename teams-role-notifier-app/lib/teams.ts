@@ -220,43 +220,54 @@ const targetEmail =
   console.log("DELEGATED MESSAGE SENT");
 }
 
-export async function getItemData(
-  itemId: string
-) {
-
+export async function getItemData(itemId: string) {
   const query = `
     query {
       items(ids: ${itemId}) {
         id
         name
         url
+        created_at
+        updated_at
+
+        group {
+          id
+          title
+        }
+
+        creator {
+          id
+          name
+          email
+        }
+
         board {
           id
           name
+        }
+
+        column_values {
+          id
+          text
+          type
         }
       }
     }
   `;
 
-  const response = await fetch(
-    "https://api.monday.com/v2",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization:
-          process.env.MONDAY_API_TOKEN!
-      },
-      body: JSON.stringify({
-        query
-      })
-    }
-  );
+  const response = await fetch("https://api.monday.com/v2", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: process.env.MONDAY_API_TOKEN!,
+    },
+    body: JSON.stringify({ query }),
+  });
 
   const data = await response.json();
 
   console.log("MONDAY ITEM DATA:");
-  console.log(data);
+  console.log(JSON.stringify(data, null, 2));
 
   return data.data.items[0];
 }
