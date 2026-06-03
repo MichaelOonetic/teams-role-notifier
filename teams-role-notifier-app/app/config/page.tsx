@@ -57,6 +57,9 @@ export default function ConfigPage() {
     (column) => column.type === "people"
   );
 
+  console.log("COLUMNS", columns);
+  console.log("PEOPLE COLUMNS", peopleColumns);
+
   return (
     <main style={{ padding: 24, fontFamily: "Arial" }}>
       <h1>Configuration Teams Notification</h1>
