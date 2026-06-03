@@ -271,6 +271,38 @@ export default function ConfigPage() {
         >
           Enregistrer la configuration
         </button>
+        <button
+  onClick={async () => {
+    const response = await fetch(
+      "/api/config/test",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          boardId,
+        }),
+      }
+    );
+
+    const data =
+      await response.json();
+
+    alert(
+      data.message ||
+      "Test envoyé"
+    );
+  }}
+  style={{
+    marginLeft: 12,
+    padding: "12px 20px",
+    cursor: "pointer",
+  }}
+>
+  Envoyer un test
+</button>
 
         <h2>Aperçu</h2>
 
