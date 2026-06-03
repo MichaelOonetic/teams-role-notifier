@@ -12,11 +12,6 @@ export async function POST(req: NextRequest) {
     template,
   } = body;
 
-  console.log("SAVE CONFIG BODY:");
-  console.log(JSON.stringify(body, null, 2));
-
-  console.log("SAVE CONFIG KEY:");
-  console.log(`teams-config:${boardId}`);
 
   await kv.set(
     `teams-config:${boardId}`,
@@ -32,8 +27,6 @@ export async function POST(req: NextRequest) {
   `teams-config:${boardId}`
 );
 
-  console.log("SAVED CONFIG:");
-  console.log(JSON.stringify(savedConfig, null, 2));
 
   return NextResponse.json({
     success: true,
