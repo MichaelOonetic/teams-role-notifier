@@ -8,25 +8,19 @@ export async function POST(req: NextRequest) {
     boardId,
     senderColumn,
     recipientColumn,
-    ccColumn,
+    ccColumns,
     template,
   } = body;
-
 
   await kv.set(
     `teams-config:${boardId}`,
     {
       senderColumn,
       recipientColumn,
-      ccColumn,
+      ccColumns,
       template,
     }
   );
-
-  const savedConfig = await kv.get(
-  `teams-config:${boardId}`
-);
-
 
   return NextResponse.json({
     success: true,

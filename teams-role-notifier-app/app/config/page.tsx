@@ -17,7 +17,7 @@ export default function ConfigPage() {
 
   const [senderColumn, setSenderColumn] = useState("");
   const [recipientColumn, setRecipientColumn] = useState("");
-  const [ccColumn, setCcColumn] = useState("");
+  const [ccColumns, setCcColumns] = useState<string[]>([]);
 
   const [message, setMessage] = useState(
     `<b>Notification Monday</b>
@@ -57,6 +57,14 @@ export default function ConfigPage() {
     (column) => column.type === "people"
   );
 
+  function toggleCcColumn(columnId: string) {
+    setCcColumns((current) =>
+      current.includes(columnId)
+        ? current.filter((id) => id !== columnId)
+        : [...current, columnId]
+    );
+  }
+
   return (
     <main style={{ padding: 24, fontFamily: "Arial" }}>
       <h1>Configuration Teams Notification</h1>
@@ -92,18 +100,20 @@ export default function ConfigPage() {
           ))}
         </select>
 
-        <label>Colonne CC</label>
-        <select
-          value={ccColumn}
-          onChange={(e) => setCcColumn(e.target.value)}
-        >
-          <option value="">Aucune</option>
+        <label>Colonnes CC</label>
+
+        <div style={{ display: "grid", gap: 8 }}>
           {peopleColumns.map((column) => (
-            <option key={column.id} value={column.id}>
+            <label key={column.id}>
+              <input
+                type="checkbox"
+                checked={ccColumns.includes(column.id)}
+                onChange={() => toggleCcColumn(column.id)}
+              />{" "}
               {column.title}
-            </option>
+            </label>
           ))}
-        </select>
+        </div>
       </section>
 
       <section style={{ marginTop: 32 }}>
@@ -126,31 +136,32 @@ export default function ConfigPage() {
 
       <section style={{ marginTop: 32 }}>
         <button
-  onClick={async () => {
-    await fetch("/api/config/save", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        boardId,
-        senderColumn,
-        recipientColumn,
-        ccColumn,
-        template: message,
-      }),
-    });
+          onClick={async () => {
+            await fetch("/api/config/save", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                boardId,
+                senderColumn,
+                recipientColumn,
+                ccColumns,
+                template: message,
+              }),
+            });
 
-    alert("Configuration enregistrée");
-  }}
-  style={{
-    marginTop: 24,
-    padding: "12px 20px",
-    cursor: "pointer",
-  }}
->
-  Enregistrer la configuration
-</button>
+            alert("Configuration enregistrée");
+          }}
+          style={{
+            marginTop: 24,
+            padding: "12px 20px",
+            cursor: "pointer",
+          }}
+        >
+          Enregistrer la configuration
+        </button>
+
         <h2>Aperçu</h2>
 
         <div
