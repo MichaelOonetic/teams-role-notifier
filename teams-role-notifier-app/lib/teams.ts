@@ -238,6 +238,7 @@ export async function getItemData(itemId: string) {
           id
           text
           type
+          value
         }
       }
     }
