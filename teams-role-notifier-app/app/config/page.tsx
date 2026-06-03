@@ -107,6 +107,9 @@ export default function ConfigPage() {
         if (config.template) {
           setMessage(config.template);
         }
+        if (config.selectedTemplate) {
+  setSelectedTemplate(config.selectedTemplate);
+}
       });
   }, [boardId]);
 
@@ -180,16 +183,22 @@ export default function ConfigPage() {
         <label>Colonnes CC</label>
 
         <div style={{ display: "grid", gap: 8 }}>
-          {peopleColumns.map((column) => (
-            <label key={column.id}>
-              <input
-                type="checkbox"
-                checked={ccColumns.includes(column.id)}
-                onChange={() => toggleCcColumn(column.id)}
-              />{" "}
-              {column.title}
-            </label>
-          ))}
+{peopleColumns
+  .filter(
+    (column) =>
+      column.id !== senderColumn &&
+      column.id !== recipientColumn
+  )
+  .map((column) => (
+    <label key={column.id}>
+      <input
+        type="checkbox"
+        checked={ccColumns.includes(column.id)}
+        onChange={() => toggleCcColumn(column.id)}
+      />{" "}
+      {column.title}
+    </label>
+  ))}
         </div>
       </section>
 
@@ -248,6 +257,7 @@ export default function ConfigPage() {
                 recipientColumn,
                 ccColumns,
                 template: message,
+                selectedTemplate,
               }),
             });
 
