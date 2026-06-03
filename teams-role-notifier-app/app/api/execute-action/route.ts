@@ -7,7 +7,7 @@ import { renderTemplate } from "@/lib/render-template";
 type TeamsConfig = {
   senderColumn?: string;
   recipientColumn?: string;
-  ccColumn?: string;
+  ccColumns?: string[];
   template?: string;
 };
 
@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
     : null;
 
   let requesterId = inputFields.requester?.id;
+
   let recipientIds = [
     inputFields.integrator?.id,
     inputFields.additionalRecipients?.id,
@@ -96,9 +97,8 @@ export async function POST(req: NextRequest) {
       config.recipientColumn
     );
 
-    const ccRecipientIds = getPeopleIdsFromColumn(
-      itemData,
-      config.ccColumn
+    const ccRecipientIds = (config.ccColumns || []).flatMap(
+      (columnId) => getPeopleIdsFromColumn(itemData, columnId)
     );
 
     requesterId = senderIds[0];
@@ -108,6 +108,8 @@ export async function POST(req: NextRequest) {
       ...ccRecipientIds,
     ];
   }
+
+  recipientIds = Array.from(new Set(recipientIds));
 
   const template =
     config?.template || rawMessage;
