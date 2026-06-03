@@ -42,16 +42,48 @@ export default function ConfigPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!boardId) return;
+useEffect(() => {
+  if (!boardId) return;
 
-    fetch(`/api/monday/columns?boardId=${boardId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const boardColumns = data.data?.boards?.[0]?.columns || [];
-        setColumns(boardColumns);
-      });
-  }, [boardId]);
+  fetch(`/api/monday/columns?boardId=${boardId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const boardColumns =
+        data.data?.boards?.[0]?.columns || [];
+
+      setColumns(boardColumns);
+    });
+
+  fetch(`/api/config/load?boardId=${boardId}`)
+    .then((res) => res.json())
+    .then((config) => {
+
+      if (config.senderColumn) {
+        setSenderColumn(
+          config.senderColumn
+        );
+      }
+
+      if (config.recipientColumn) {
+        setRecipientColumn(
+          config.recipientColumn
+        );
+      }
+
+      if (config.ccColumns) {
+        setCcColumns(
+          config.ccColumns
+        );
+      }
+
+      if (config.template) {
+        setMessage(
+          config.template
+        );
+      }
+    });
+
+}, [boardId]);
 
   const peopleColumns = columns.filter(
     (column) => column.type === "people"
