@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   recipientIds = Array.from(new Set(recipientIds));
 
   const template =
-    config?.template || rawMessage;
+  rawMessage || config?.template || "";
 
   const context = {
     "requester.name": inputFields.requester?.name || "",
