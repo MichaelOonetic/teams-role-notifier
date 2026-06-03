@@ -11,6 +11,52 @@ type Column = {
   type: string;
 };
 
+const templates = {
+  statusChanged: `<b>Changement de statut</b>
+
+<br><br>
+
+<b>Ticket :</b> {item.name}
+
+<br><br>
+
+<a href="{item.url}">Ouvrir l'item</a>`,
+
+  updateCreated: `<b>Nouveau commentaire</b>
+
+<br><br>
+
+<b>Ticket :</b> {item.name}
+
+<br><br>
+
+{update.body}
+
+<br><br>
+
+<a href="{item.url}">Ouvrir l'item</a>`,
+
+  itemCreated: `<b>Nouvel élément créé</b>
+
+<br><br>
+
+<b>Ticket :</b> {item.name}
+
+<br><br>
+
+<a href="{item.url}">Ouvrir l'item</a>`,
+
+  personAssigned: `<b>Nouvelle affectation</b>
+
+<br><br>
+
+<b>Ticket :</b> {item.name}
+
+<br><br>
+
+<a href="{item.url}">Ouvrir l'item</a>`,
+};
+
 export default function ConfigPage() {
   const [boardId, setBoardId] = useState<number | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
@@ -18,18 +64,9 @@ export default function ConfigPage() {
   const [senderColumn, setSenderColumn] = useState("");
   const [recipientColumn, setRecipientColumn] = useState("");
   const [ccColumns, setCcColumns] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
-  const [message, setMessage] = useState(
-    `<b>Notification Monday</b>
-
-<br><br>
-
-<b>Ticket :</b> {item.name}
-
-<br>
-
-<a href="{item.url}">Ouvrir l'item</a>`
-  );
+  const [message, setMessage] = useState(templates.statusChanged);
 
   useEffect(() => {
     monday.listen("context", (res) => {
@@ -42,48 +79,36 @@ export default function ConfigPage() {
     });
   }, []);
 
-useEffect(() => {
-  if (!boardId) return;
+  useEffect(() => {
+    if (!boardId) return;
 
-  fetch(`/api/monday/columns?boardId=${boardId}`)
-    .then((res) => res.json())
-    .then((data) => {
-      const boardColumns =
-        data.data?.boards?.[0]?.columns || [];
+    fetch(`/api/monday/columns?boardId=${boardId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const boardColumns = data.data?.boards?.[0]?.columns || [];
+        setColumns(boardColumns);
+      });
 
-      setColumns(boardColumns);
-    });
+    fetch(`/api/config/load?boardId=${boardId}`)
+      .then((res) => res.json())
+      .then((config) => {
+        if (config.senderColumn) {
+          setSenderColumn(config.senderColumn);
+        }
 
-  fetch(`/api/config/load?boardId=${boardId}`)
-    .then((res) => res.json())
-    .then((config) => {
+        if (config.recipientColumn) {
+          setRecipientColumn(config.recipientColumn);
+        }
 
-      if (config.senderColumn) {
-        setSenderColumn(
-          config.senderColumn
-        );
-      }
+        if (config.ccColumns) {
+          setCcColumns(config.ccColumns);
+        }
 
-      if (config.recipientColumn) {
-        setRecipientColumn(
-          config.recipientColumn
-        );
-      }
-
-      if (config.ccColumns) {
-        setCcColumns(
-          config.ccColumns
-        );
-      }
-
-      if (config.template) {
-        setMessage(
-          config.template
-        );
-      }
-    });
-
-}, [boardId]);
+        if (config.template) {
+          setMessage(config.template);
+        }
+      });
+  }, [boardId]);
 
   const peopleColumns = columns.filter(
     (column) => column.type === "people"
@@ -95,6 +120,26 @@ useEffect(() => {
         ? current.filter((id) => id !== columnId)
         : [...current, columnId]
     );
+  }
+
+  function applyTemplate(value: string) {
+    setSelectedTemplate(value);
+
+    if (value === "statusChanged") {
+      setMessage(templates.statusChanged);
+    }
+
+    if (value === "updateCreated") {
+      setMessage(templates.updateCreated);
+    }
+
+    if (value === "itemCreated") {
+      setMessage(templates.itemCreated);
+    }
+
+    if (value === "personAssigned") {
+      setMessage(templates.personAssigned);
+    }
   }
 
   return (
@@ -146,6 +191,29 @@ useEffect(() => {
             </label>
           ))}
         </div>
+      </section>
+
+      <section style={{ marginTop: 32, maxWidth: 600 }}>
+        <label>
+          <strong>Bibliothèque de modèles</strong>
+        </label>
+
+        <select
+          value={selectedTemplate}
+          onChange={(e) => applyTemplate(e.target.value)}
+          style={{
+            display: "block",
+            width: "100%",
+            marginTop: 8,
+            padding: 8,
+          }}
+        >
+          <option value="">Choisir un modèle</option>
+          <option value="statusChanged">Changement de statut</option>
+          <option value="updateCreated">Nouveau commentaire</option>
+          <option value="itemCreated">Nouvel élément créé</option>
+          <option value="personAssigned">Nouvelle affectation</option>
+        </select>
       </section>
 
       <section style={{ marginTop: 32 }}>
@@ -206,7 +274,8 @@ useEffect(() => {
           dangerouslySetInnerHTML={{
             __html: message
               .replaceAll("{item.name}", "Exemple ticket")
-              .replaceAll("{item.url}", "https://monday.com"),
+              .replaceAll("{item.url}", "https://monday.com")
+              .replaceAll("{update.body}", "Exemple de commentaire"),
           }}
         />
       </section>
