@@ -128,6 +128,32 @@ export default function ConfigPage() {
       </section>
 
       <section style={{ marginTop: 32 }}>
+        <button
+  onClick={async () => {
+    await fetch("/api/config/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        boardId,
+        senderColumn,
+        recipientColumn,
+        ccColumn,
+        template: message,
+      }),
+    });
+
+    alert("Configuration enregistrée");
+  }}
+  style={{
+    marginTop: 24,
+    padding: "12px 20px",
+    cursor: "pointer",
+  }}
+>
+  Enregistrer la configuration
+</button>
         <h2>Aperçu</h2>
 
         <div
