@@ -18,43 +18,53 @@ const templates = {
 
 <b>Ticket :</b> {item.name}
 
-<br><br>
+<br>
 
-<a href="{item.url}">Ouvrir l'item</a>`,
+<a href="{item.url}">
+Ouvrir l'item
+</a>`,
 
-  updateCreated: `<b>Nouveau commentaire</b>
-
-<br><br>
+  columnChanged: `<b>Modification de colonne</b>
 
 <b>Ticket :</b> {item.name}
 
-<br><br>
+Une valeur a été modifiée.
 
-{update.body}
-
-<br><br>
-
-<a href="{item.url}">Ouvrir l'item</a>`,
+<a href="{item.url}">
+Ouvrir l'item
+</a>`,
 
   itemCreated: `<b>Nouvel élément créé</b>
 
-<br><br>
+<b>Ticket :</b> {item.name}
+
+<b>Board :</b> {board.name}
+
+<a href="{item.url}">
+Ouvrir l'item
+</a>`,
+
+  updateCreated: `<b>Nouveau commentaire</b>
 
 <b>Ticket :</b> {item.name}
 
-<br><br>
+{update.body}
 
-<a href="{item.url}">Ouvrir l'item</a>`,
+<a href="{item.url}">
+Ouvrir l'item
+</a>`,
 
-  personAssigned: `<b>Nouvelle affectation</b>
+  subitemStatusChanged: `<b>Changement de statut d'un sous-élément</b>
 
-<br><br>
+<b>Sous-élément :</b> {subitem.name}
 
-<b>Ticket :</b> {item.name}
+{previousStatus}
+→
+{currentStatus}
 
-<br><br>
-
-<a href="{item.url}">Ouvrir l'item</a>`,
+<a href="{item.url}">
+Ouvrir l'élément parent
+</a>`,
 };
 
 export default function ConfigPage() {
@@ -125,25 +135,17 @@ export default function ConfigPage() {
     );
   }
 
-  function applyTemplate(value: string) {
-    setSelectedTemplate(value);
+function applyTemplate(value: string) {
+  setSelectedTemplate(value);
 
-    if (value === "statusChanged") {
-      setMessage(templates.statusChanged);
-    }
-
-    if (value === "updateCreated") {
-      setMessage(templates.updateCreated);
-    }
-
-    if (value === "itemCreated") {
-      setMessage(templates.itemCreated);
-    }
-
-    if (value === "personAssigned") {
-      setMessage(templates.personAssigned);
-    }
+  if (value in templates) {
+    setMessage(
+      templates[
+        value as keyof typeof templates
+      ]
+    );
   }
+}
 
   return (
     <main style={{ padding: 24, fontFamily: "Arial" }}>
@@ -218,10 +220,25 @@ export default function ConfigPage() {
           }}
         >
           <option value="">Choisir un modèle</option>
-          <option value="statusChanged">Changement de statut</option>
-          <option value="updateCreated">Nouveau commentaire</option>
-          <option value="itemCreated">Nouvel élément créé</option>
-          <option value="personAssigned">Nouvelle affectation</option>
+          <option value="statusChanged">
+            Changement de statut
+          </option>
+
+          <option value="columnChanged">
+            Modification de colonne
+          </option>
+
+          <option value="itemCreated">
+            Nouvel élément créé
+          </option>
+
+          <option value="updateCreated">
+            Nouveau commentaire
+          </option>
+
+          <option value="subitemStatusChanged">
+            Changement de statut d'un sous-élément
+          </option>
         </select>
       </section>
 
