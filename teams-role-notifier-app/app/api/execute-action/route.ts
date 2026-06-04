@@ -46,6 +46,14 @@ export async function POST(req: NextRequest) {
 
   console.log("MONDAY PAYLOAD:");
   console.log(JSON.stringify(body, null, 2));
+  console.log("RUNTIME METADATA:");
+  console.log(
+    JSON.stringify(
+    body.runtimeMetadata,
+    null,
+    2
+  )
+);
 
   if (body.challenge) {
     return NextResponse.json({
