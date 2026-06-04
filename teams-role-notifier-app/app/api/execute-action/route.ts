@@ -137,24 +137,58 @@ export async function POST(req: NextRequest) {
 
   const message = renderTemplate(template, context);
 
-  if (!requesterId || recipientIds.length === 0 || !message) {
-    console.error("Missing required data", {
-      requesterId,
-      recipientIds,
-      message,
+if (!requesterId) {
+  console.error(
+    "NO SENDER FOUND",
+    {
       boardId,
-      itemId,
       config,
-    });
+    }
+  );
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Missing sender, recipients or message",
-      },
-      { status: 400 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        "No sender found. Check sender column configuration.",
+    },
+    { status: 400 }
+  );
+}
+
+if (recipientIds.length === 0) {
+  console.error(
+    "NO RECIPIENT FOUND",
+    {
+      boardId,
+      config,
+    }
+  );
+
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        "No recipient found. Check recipient column configuration.",
+    },
+    { status: 400 }
+  );
+}
+
+if (!message) {
+  console.error(
+    "EMPTY MESSAGE"
+  );
+
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        "Message is empty.",
+    },
+    { status: 400 }
+  );
+}
 
   await sendTeamsMessage(
     String(requesterId),
