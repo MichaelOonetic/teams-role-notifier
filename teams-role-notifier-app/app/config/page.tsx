@@ -73,6 +73,9 @@ export default function ConfigPage() {
 
   const [senderColumn, setSenderColumn] = useState("");
   const [recipientColumn, setRecipientColumn] = useState("");
+  const [senderMode, setSenderMode] = useState(
+  "configuredColumn"
+);
   const [ccColumns, setCcColumns] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
@@ -102,6 +105,11 @@ export default function ConfigPage() {
     fetch(`/api/config/load?boardId=${boardId}`)
       .then((res) => res.json())
       .then((config) => {
+        if (config.senderMode) {
+        setSenderMode(
+          config.senderMode
+        );
+      }
         if (config.senderColumn) {
           setSenderColumn(config.senderColumn);
         }
@@ -156,6 +164,22 @@ function applyTemplate(value: string) {
       </p>
 
       <section style={{ display: "grid", gap: 12, maxWidth: 600 }}>
+        <label>Mode expéditeur</label>
+
+<select
+  value={senderMode}
+  onChange={(e) =>
+    setSenderMode(e.target.value)
+  }
+>
+  <option value="configuredColumn">
+    Colonne configurée
+  </option>
+
+  <option value="triggeredBy">
+    Auteur de l'action
+  </option>
+</select>
         <label>Colonne expéditeur</label>
         <select
           value={senderColumn}
@@ -270,6 +294,7 @@ function applyTemplate(value: string) {
               },
               body: JSON.stringify({
                 boardId,
+                senderMode,
                 senderColumn,
                 recipientColumn,
                 ccColumns,

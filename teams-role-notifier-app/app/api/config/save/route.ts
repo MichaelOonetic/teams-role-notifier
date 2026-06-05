@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
 
 const {
   boardId,
+  senderMode,
   senderColumn,
   recipientColumn,
   ccColumns,
@@ -17,6 +18,7 @@ await kv.set(
   `teams-config:${boardId}`,
   {
     senderColumn,
+    senderMode,
     recipientColumn,
     ccColumns,
     template,
