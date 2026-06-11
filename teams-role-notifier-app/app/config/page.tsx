@@ -244,27 +244,87 @@ function applyTemplate(value: string) {
           }}
         >
           <option value="">Choisir un modèle</option>
-          <option value="statusChanged">
-            Changement de statut
-          </option>
+<option value="itemCreated">
+  📋 Item créé
+</option>
 
-          <option value="columnChanged">
-            Modification de colonne
-          </option>
+<option value="updateCreated">
+  💬 Nouveau commentaire
+</option>
 
-          <option value="itemCreated">
-            Nouvel élément créé
-          </option>
+<option value="statusChanged">
+  🔄 Changement de statut
+</option>
 
-          <option value="updateCreated">
-            Nouveau commentaire
-          </option>
+<option value="columnChanged">
+  📝 Modification de colonne
+</option>
 
-          <option value="subitemStatusChanged">
-            Changement de statut d'un sous-élément
-          </option>
+<option value="subitemStatusChanged">
+  🧩 Statut de sous-élément
+</option>
         </select>
       </section>
+
+      <section
+  style={{
+    marginTop: 24,
+    padding: 16,
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    background: "#f7f7f7",
+    maxWidth: 600,
+  }}
+>
+  <strong>
+    Configuration active
+  </strong>
+
+  <div
+    style={{
+      marginTop: 12,
+      display: "grid",
+      gap: 6,
+    }}
+  >
+    <div>
+      Expéditeur :
+      {" "}
+      {peopleColumns.find(
+        (c) =>
+          c.id === senderColumn
+      )?.title || "-"}
+    </div>
+
+    <div>
+      Destinataire :
+      {" "}
+      {peopleColumns.find(
+        (c) =>
+          c.id === recipientColumn
+      )?.title || "-"}
+    </div>
+
+    <div>
+      CC :
+      {" "}
+      {peopleColumns
+        .filter((c) =>
+          ccColumns.includes(
+            c.id
+          )
+        )
+        .map((c) => c.title)
+        .join(", ") || "-"}
+    </div>
+
+    <div>
+      Modèle :
+      {" "}
+      {selectedTemplate || "-"}
+    </div>
+  </div>
+</section>
 
       <section style={{ marginTop: 32 }}>
         <label>
