@@ -191,11 +191,18 @@ export async function sendTeamsMessageFromEmail(
   for (const recipientMondayUserId of recipientMondayUserIds) {
     const targetEmail = await getMondayUserEmail(recipientMondayUserId);
 
-    console.log("TARGET EMAIL:");
-    console.log(targetEmail);
+if (
+  targetEmail.toLowerCase() === senderEmail.toLowerCase()
+) {
+  console.log("SKIP SELF MESSAGE:", targetEmail);
+  continue;
+}
 
-    const targetTeamsUserId =
-      await getTeamsUserId(delegatedToken, targetEmail);
+console.log("TARGET EMAIL:");
+console.log(targetEmail);
+
+const targetTeamsUserId =
+  await getTeamsUserId(delegatedToken, targetEmail);
 
     const chatId =
       await createOrGetChat(delegatedToken, targetTeamsUserId);
