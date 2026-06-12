@@ -87,6 +87,39 @@ export async function POST(
     });
   }
 
+  const actionUuid =
+  body.runtimeMetadata?.actionUuid;
+
+if (actionUuid) {
+  const alreadyProcessed =
+    await kv.get(
+      `monday-action:${actionUuid}`
+    );
+
+  if (alreadyProcessed) {
+    console.log(
+      "DUPLICATE ACTION IGNORED",
+      actionUuid
+    );
+
+    return NextResponse.json({
+      success: true,
+      duplicate: true,
+    });
+  }
+
+  await kv.set(
+    `monday-action:${actionUuid}`,
+    {
+      processedAt:
+        new Date().toISOString(),
+    },
+    {
+      ex: 60 * 60 * 24,
+    }
+  );
+}
+
   const inputFields =
     body.payload?.inputFields ||
     {};
