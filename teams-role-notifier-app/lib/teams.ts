@@ -170,20 +170,18 @@ async function sendMessageToChat(
   return data;
 }
 
-export async function sendTeamsMessage(
-  requesterMondayUserId: string,
+export async function sendTeamsMessageFromEmail(
+  senderEmail: string,
   recipientMondayUserIds: string[],
   text: string
 ) {
-  const requesterEmail = await getMondayUserEmail(requesterMondayUserId);
-
   const refreshToken = await kv.get<string>(
-    `ms-refresh-token:${requesterEmail}`
+    `ms-refresh-token:${senderEmail.toLowerCase()}`
   );
 
   if (!refreshToken) {
     throw new Error(
-      `No refresh token found for sender: ${requesterEmail}`
+      `No refresh token found for sender: ${senderEmail}`
     );
   }
 
@@ -206,6 +204,21 @@ export async function sendTeamsMessage(
   }
 
   console.log("DELEGATED MESSAGE SENT");
+}
+
+export async function sendTeamsMessage(
+  requesterMondayUserId: string,
+  recipientMondayUserIds: string[],
+  text: string
+) {
+  const requesterEmail =
+    await getMondayUserEmail(requesterMondayUserId);
+
+  await sendTeamsMessageFromEmail(
+    requesterEmail,
+    recipientMondayUserIds,
+    text
+  );
 }
 
 export async function getItemData(itemId: string) {

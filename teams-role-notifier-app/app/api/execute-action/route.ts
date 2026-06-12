@@ -1,202 +1,317 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 
-import { sendTeamsMessage, getItemData } from "@/lib/teams";
+import {
+  sendTeamsMessage,
+  sendTeamsMessageFromEmail,
+  getItemData,
+} from "@/lib/teams";
+
 import { renderTemplate } from "@/lib/render-template";
 
 type TeamsConfig = {
+  senderMode?: string;
   senderColumn?: string;
-    recipientColumn?: string;
-      ccColumns?: string[];
-        template?: string;
-        };
+  recipientColumn?: string;
+  ccColumns?: string[];
+  template?: string;
+};
 
-        function extractItemIdFromText(text: string) {
-          const match = text.match(/\/pulses\/(\d+)/);
-            return match?.[1] || null;
-            }
+function extractItemIdFromText(text: string) {
+  const match = text.match(/\/pulses\/(\d+)/);
+  return match?.[1] || null;
+}
 
-            function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
-              if (!columnId) return [];
+function extractActorEmail(text: string) {
+  const match = text.match(/ACTOR=([^\s]+)/);
+  return match?.[1] || null;
+}
 
-                const column = itemData?.column_values?.find(
-                    (value: any) => value.id === columnId
-                      );
+function removeActorLine(text: string) {
+  return text
+    .replace(/ACTOR=[^\n\r]+[\n\r]*/g, "")
+    .trim();
+}
 
-                        if (!column?.value) return [];
+function getPeopleIdsFromColumn(
+  itemData: any,
+  columnId?: string
+) {
+  if (!columnId) return [];
 
-                          try {
-                              const parsed = JSON.parse(column.value);
+  const column =
+    itemData?.column_values?.find(
+      (value: any) =>
+        value.id === columnId
+    );
 
-                                  const people =
-                                        parsed.personsAndTeams ||
-                                              parsed.persons_and_teams ||
-                                                    [];
+  if (!column?.value) return [];
 
-                                                        return people
-                                                              .filter((person: any) => person.kind === "person")
-                                                                    .map((person: any) => String(person.id));
-                                                                      } catch {
-                                                                          return [];
-                                                                            }
-                                                                            }
+  try {
+    const parsed =
+      JSON.parse(column.value);
 
-                                                                            export async function POST(req: NextRequest) {
-                                                                              const body = await req.json();
+    const people =
+      parsed.personsAndTeams ||
+      parsed.persons_and_teams ||
+      [];
 
-                                                                                console.log("MONDAY PAYLOAD:");
-                                                                                  console.log(JSON.stringify(body, null, 2));
-                                                                                    console.log("RUNTIME METADATA:");
-                                                                                      console.log(
-                                                                                          JSON.stringify(
-                                                                                              body.runtimeMetadata,
-                                                                                                  null,
-                                                                                                      2
-                                                                                                        )
-                                                                                                        );
+    return people
+      .filter(
+        (person: any) =>
+          person.kind === "person"
+      )
+      .map(
+        (person: any) =>
+          String(person.id)
+      );
+  } catch {
+    return [];
+  }
+}
 
-                                                                                                          if (body.challenge) {
-                                                                                                              return NextResponse.json({
-                                                                                                                    challenge: body.challenge,
-                                                                                                                        });
-                                                                                                                          }
+export async function POST(
+  req: NextRequest
+) {
+  const body = await req.json();
 
-                                                                                                                            const inputFields = body.payload?.inputFields || {};
+  console.log("MONDAY PAYLOAD:");
+  console.log(
+    JSON.stringify(body, null, 2)
+  );
 
-                                                                                                                              const boardId =
-                                                                                                                                  body.runtimeMetadata?.hostMetadata?.hostInstanceId;
+  if (body.challenge) {
+    return NextResponse.json({
+      challenge:
+        body.challenge,
+    });
+  }
 
-                                                                                                                                    const rawMessage = inputFields.message || "";
+  const inputFields =
+    body.payload?.inputFields ||
+    {};
 
-                                                                                                                                      const itemId =
-                                                                                                                                          body.payload?.pulseId ||
-                                                                                                                                              body.payload?.itemId ||
-                                                                                                                                                  body.event?.pulseId ||
-                                                                                                                                                      body.event?.itemId ||
-                                                                                                                                                          extractItemIdFromText(rawMessage);
+  const boardId =
+    body.runtimeMetadata
+      ?.hostMetadata
+      ?.hostInstanceId;
 
-                                                                                                                                                            let itemData = null;
+  const rawMessage =
+    inputFields.message || "";
 
-                                                                                                                                                              if (itemId) {
-                                                                                                                                                                  itemData = await getItemData(String(itemId));
-                                                                                                                                                                    }
+  const actorEmail =
+    extractActorEmail(
+      rawMessage
+    );
 
-                                                                                                                                                                      const config = boardId
-                                                                                                                                                                          ? await kv.get<TeamsConfig>(`teams-config:${boardId}`)
-                                                                                                                                                                              : null;
+  const itemId =
+    body.payload?.pulseId ||
+    body.payload?.itemId ||
+    body.event?.pulseId ||
+    body.event?.itemId ||
+    extractItemIdFromText(
+      rawMessage
+    );
 
-                                                                                                                                                                                let requesterId = inputFields.requester?.id;
+  let itemData = null;
 
-                                                                                                                                                                                  let recipientIds = [
-                                                                                                                                                                                      inputFields.integrator?.id,
-                                                                                                                                                                                          inputFields.additionalRecipients?.id,
-                                                                                                                                                                                            ]
-                                                                                                                                                                                                .filter(Boolean)
-                                                                                                                                                                                                    .map(String);
+  if (itemId) {
+    itemData =
+      await getItemData(
+        String(itemId)
+      );
+  }
 
-                                                                                                                                                                                                      if (config && itemData) {
-                                                                                                                                                                                                          const senderIds = getPeopleIdsFromColumn(
-                                                                                                                                                                                                                itemData,
-                                                                                                                                                                                                                      config.senderColumn
-                                                                                                                                                                                                                          );
+  const config =
+    boardId
+      ? await kv.get<TeamsConfig>(
+          `teams-config:${boardId}`
+        )
+      : null;
 
-                                                                                                                                                                                                                              const mainRecipientIds = getPeopleIdsFromColumn(
-                                                                                                                                                                                                                                    itemData,
-                                                                                                                                                                                                                                          config.recipientColumn
-                                                                                                                                                                                                                                              );
+  let requesterId =
+    inputFields.requester?.id;
 
-                                                                                                                                                                                                                                                  const ccRecipientIds = (config.ccColumns || []).flatMap(
-                                                                                                                                                                                                                                                        (columnId) => getPeopleIdsFromColumn(itemData, columnId)
-                                                                                                                                                                                                                                                            );
+  let recipientIds = [
+    inputFields.integrator?.id,
+    inputFields
+      ?.additionalRecipients
+      ?.id,
+  ]
+    .filter(Boolean)
+    .map(String);
 
-                                                                                                                                                                                                                                                                requesterId = senderIds[0];
+  if (config && itemData) {
+    const senderIds =
+      getPeopleIdsFromColumn(
+        itemData,
+        config.senderColumn
+      );
 
-                                                                                                                                                                                                                                                                    recipientIds = [
-                                                                                                                                                                                                                                                                          ...mainRecipientIds,
-                                                                                                                                                                                                                                                                                ...ccRecipientIds,
-                                                                                                                                                                                                                                                                                    ];
-                                                                                                                                                                                                                                                                                      }
+    const mainRecipientIds =
+      getPeopleIdsFromColumn(
+        itemData,
+        config.recipientColumn
+      );
 
-                                                                                                                                                                                                                                                                                        recipientIds = Array.from(new Set(recipientIds));
+    const ccRecipientIds = (
+      config.ccColumns || []
+    ).flatMap(
+      (columnId) =>
+        getPeopleIdsFromColumn(
+          itemData,
+          columnId
+        )
+    );
 
-                                                                                                                                                                                                                                                                                          const template =
-                                                                                                                                                                                                                                                                                            rawMessage || config?.template || "";
+    requesterId =
+      senderIds[0];
 
-                                                                                                                                                                                                                                                                                              const context = {
-                                                                                                                                                                                                                                                                                                  "requester.name": inputFields.requester?.name || "",
-                                                                                                                                                                                                                                                                                                      "integrator.name": inputFields.integrator?.name || "",
-                                                                                                                                                                                                                                                                                                          "item.id": itemData?.id || "",
-                                                                                                                                                                                                                                                                                                              "item.name": itemData?.name || "",
-                                                                                                                                                                                                                                                                                                                  "item.url": itemData?.url || "",
-                                                                                                                                                                                                                                                                                                                      "board.id": itemData?.board?.id || "",
-                                                                                                                                                                                                                                                                                                                          "board.name": itemData?.board?.name || "",
-                                                                                                                                                                                                                                                                                                                              "board.url": itemData?.board?.id
-                                                                                                                                                                                                                                                                                                                                    ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
-                                                                                                                                                                                                                                                                                                                                          : "",
-                                                                                                                                                                                                                                                                                                                                            };
+    recipientIds = [
+      ...mainRecipientIds,
+      ...ccRecipientIds,
+    ];
+  }
 
-                                                                                                                                                                                                                                                                                                                                              const message = renderTemplate(template, context);
+  recipientIds =
+    Array.from(
+      new Set(recipientIds)
+    );
 
-                                                                                                                                                                                                                                                                                                                                              if (!requesterId) {
-                                                                                                                                                                                                                                                                                                                                                console.error(
-                                                                                                                                                                                                                                                                                                                                                    "NO SENDER FOUND",
-                                                                                                                                                                                                                                                                                                                                                        {
-                                                                                                                                                                                                                                                                                                                                                              boardId,
-                                                                                                                                                                                                                                                                                                                                                                    config,
-                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                          );
+  const template =
+    rawMessage ||
+    config?.template ||
+    "";
 
-                                                                                                                                                                                                                                                                                                                                                                            return NextResponse.json(
-                                                                                                                                                                                                                                                                                                                                                                                {
-                                                                                                                                                                                                                                                                                                                                                                                      success: false,
-                                                                                                                                                                                                                                                                                                                                                                                            error:
-                                                                                                                                                                                                                                                                                                                                                                                                    "No sender found. Check sender column configuration.",
-                                                                                                                                                                                                                                                                                                                                                                                                        },
-                                                                                                                                                                                                                                                                                                                                                                                                            { status: 400 }
-                                                                                                                                                                                                                                                                                                                                                                                                              );
-                                                                                                                                                                                                                                                                                                                                                                                                              }
+  const context = {
+    "requester.name":
+      inputFields.requester
+        ?.name || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                              if (recipientIds.length === 0) {
-                                                                                                                                                                                                                                                                                                                                                                                                                console.error(
-                                                                                                                                                                                                                                                                                                                                                                                                                    "NO RECIPIENT FOUND",
-                                                                                                                                                                                                                                                                                                                                                                                                                        {
-                                                                                                                                                                                                                                                                                                                                                                                                                              boardId,
-                                                                                                                                                                                                                                                                                                                                                                                                                                    config,
-                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                          );
+    "integrator.name":
+      inputFields.integrator
+        ?.name || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                            return NextResponse.json(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      success: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            error:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "No recipient found. Check recipient column configuration.",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            { status: 400 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              }
+    "item.id":
+      itemData?.id || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              if (!message) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                console.error(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "EMPTY MESSAGE"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      );
+    "item.name":
+      itemData?.name || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return NextResponse.json(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  success: false,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        error:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "Message is empty.",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        { status: 400 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+    "item.url":
+      itemData?.url || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            await sendTeamsMessage(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                String(requesterId),
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    recipientIds,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        message
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          );
+    "board.id":
+      itemData?.board?.id || "",
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return NextResponse.json({
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                success: true,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  });
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  }
+    "board.name":
+      itemData?.board?.name ||
+      "",
+
+    "board.url":
+      itemData?.board?.id
+        ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
+        : "",
+  };
+
+  const message =
+    renderTemplate(
+      removeActorLine(
+        template
+      ),
+      context
+    );
+
+  if (!requesterId) {
+    console.error(
+      "NO SENDER FOUND",
+      {
+        boardId,
+        config,
+      }
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "No sender found",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (
+    recipientIds.length === 0
+  ) {
+    console.error(
+      "NO RECIPIENT FOUND",
+      {
+        boardId,
+        config,
+      }
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "No recipient found",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (!message) {
+    console.error(
+      "EMPTY MESSAGE"
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Message is empty",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (
+    config?.senderMode ===
+      "triggeredBy" &&
+    actorEmail
+  ) {
+    try {
+      await sendTeamsMessageFromEmail(
+        actorEmail,
+        recipientIds,
+        message
+      );
+    } catch (error) {
+      console.error(
+        "AUTHOR NOT CONNECTED - FALLBACK TO CONFIGURED SENDER",
+        {
+          actorEmail,
+          error,
+        }
+      );
+
+      await sendTeamsMessage(
+        String(requesterId),
+        recipientIds,
+        message
+      );
+    }
+  } else {
+    await sendTeamsMessage(
+      String(requesterId),
+      recipientIds,
+      message
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+  });
+}
