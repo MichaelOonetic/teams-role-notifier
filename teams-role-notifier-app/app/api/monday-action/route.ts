@@ -201,19 +201,49 @@ const statusText = statusColumn?.text || "";
   const triggerUuid =
   body.runtimeMetadata?.triggerUuid || "";
 
-const customMessage = body.payload?.inputFields?.message?.trim();
+let message = "";
 
-const message =
-  customMessage ||
-  `
+if (statusText === "Bloqué") {
+  message = `
+🚨 Élément bloqué
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else if (statusText === "En cours") {
+  message = `
+🟡 Élément en cours
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else if (statusText === "Fait") {
+  message = `
+✅ Élément terminé
+
+Item : ${item.name}
+
+Statut : ${statusText}
+
+<a href="${item.url}">Ouvrir l'élément monday</a>
+`;
+} else {
+  message = `
 📢 Notification Teams
 
 Item : ${item.name}
 
-${statusText ? `Statut : ${statusText}` : ""}
+Statut : ${statusText}
 
 <a href="${item.url}">Ouvrir l'élément monday</a>
 `;
+}
 
   const results = [];
 
