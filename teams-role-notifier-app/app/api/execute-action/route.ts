@@ -17,28 +17,29 @@ type TeamsConfig = {
   template?: string;
 };
 
-function extractItemIdFromText(text: string) {
-  const match = text.match(/\/pulses\/(\d+)/);
-  return match?.[1] || null;
+const ACTION_TTL_SECONDS = 60 * 60 * 24;
+
+function extractItemId(text: string) {
+  return text.match(/\/pulses\/(\d+)/)?.[1] || null;
 }
 
 function extractActorEmail(text: string) {
-  const actorMatch = text.match(
+  const explicitActor = text.match(
     /ACTOR=([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
   );
 
-  if (actorMatch?.[1]) {
-    return actorMatch[1].toLowerCase();
+  if (explicitActor?.[1]) {
+    return explicitActor[1].toLowerCase();
   }
 
-  const emailMatch = text.match(
+  const firstEmail = text.match(
     /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
   );
 
-  return emailMatch?.[1]?.toLowerCase() || null;
+  return firstEmail?.[1]?.toLowerCase() || null;
 }
 
-function removeActorLine(text: string) {
+function cleanMessage(text: string) {
   return text.replace(/ACTOR=[^\n\r]+[\n\r]*/g, "").trim();
 }
 
@@ -67,6 +68,110 @@ function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
   }
 }
 
+async function ignoreDuplicateAction(actionUuid?: string) {
+  if (!actionUuid) return false;
+
+  const key = `monday-action:${actionUuid}`;
+
+  const alreadyProcessed = await kv.get(key);
+
+  if (alreadyProcessed) {
+    console.log("DUPLICATE ACTION IGNORED", actionUuid);
+    return true;
+  }
+
+  await kv.set(
+    key,
+    {
+      processedAt: new Date().toISOString(),
+    },
+    {
+      ex: ACTION_TTL_SECONDS,
+    }
+  );
+
+  return false;
+}
+
+function buildContext(itemData: any, inputFields: any) {
+  return {
+    "requester.name": inputFields.requester?.name || "",
+    "integrator.name": inputFields.integrator?.name || "",
+    "item.id": itemData?.id || "",
+    "item.name": itemData?.name || "",
+    "item.url": itemData?.url || "",
+    "creator.name": itemData?.creator?.name || "",
+    "creator.email": itemData?.creator?.email || "",
+    "board.id": itemData?.board?.id || "",
+    "board.name": itemData?.board?.name || "",
+    "board.url": itemData?.board?.id
+      ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
+      : "",
+  };
+}
+
+function getRecipientIds(
+  itemData: any,
+  recipientColumn?: string,
+  ccColumns: string[] = []
+) {
+  const mainRecipients =
+    getPeopleIdsFromColumn(itemData, recipientColumn);
+
+  const ccRecipients = ccColumns.flatMap((columnId) =>
+    getPeopleIdsFromColumn(itemData, columnId)
+  );
+
+  return Array.from(
+    new Set([
+      ...mainRecipients,
+      ...ccRecipients,
+    ])
+  );
+}
+
+async function sendMessage(params: {
+  config: TeamsConfig | null;
+  actorEmail: string | null;
+  requesterId: string;
+  recipientIds: string[];
+  message: string;
+}) {
+  const {
+    config,
+    actorEmail,
+    requesterId,
+    recipientIds,
+    message,
+  } = params;
+
+  if (config?.senderMode === "triggeredBy" && actorEmail) {
+    try {
+      await sendTeamsMessageFromEmail(
+        actorEmail,
+        recipientIds,
+        message
+      );
+
+      return;
+    } catch (error) {
+      console.error(
+        "AUTHOR NOT CONNECTED - FALLBACK TO CONFIGURED SENDER",
+        {
+          actorEmail,
+          error,
+        }
+      );
+    }
+  }
+
+  await sendTeamsMessage(
+    requesterId,
+    recipientIds,
+    message
+  );
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -79,31 +184,16 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const actionUuid = body.runtimeMetadata?.actionUuid;
-
-  if (actionUuid) {
-    const alreadyProcessed = await kv.get(
-      `monday-action:${actionUuid}`
+  const isDuplicate =
+    await ignoreDuplicateAction(
+      body.runtimeMetadata?.actionUuid
     );
 
-    if (alreadyProcessed) {
-      console.log("DUPLICATE ACTION IGNORED", actionUuid);
-
-      return NextResponse.json({
-        success: true,
-        duplicate: true,
-      });
-    }
-
-    await kv.set(
-      `monday-action:${actionUuid}`,
-      {
-        processedAt: new Date().toISOString(),
-      },
-      {
-        ex: 60 * 60 * 24,
-      }
-    );
+  if (isDuplicate) {
+    return NextResponse.json({
+      success: true,
+      duplicate: true,
+    });
   }
 
   const inputFields = body.payload?.inputFields || {};
@@ -120,20 +210,15 @@ export async function POST(req: NextRequest) {
     body.payload?.itemId ||
     body.event?.pulseId ||
     body.event?.itemId ||
-    extractItemIdFromText(rawMessage);
+    extractItemId(rawMessage);
 
-  let itemData = null;
-
-  if (itemId) {
-    itemData = await getItemData(String(itemId));
-  }
+  const itemData = itemId
+    ? await getItemData(String(itemId))
+    : null;
 
   const config = boardId
     ? await kv.get<TeamsConfig>(`teams-config:${boardId}`)
     : null;
-
-  const senderColumn =
-    config?.senderColumn;
 
   const recipientColumn =
     inputFields.recipientColumn ||
@@ -144,74 +229,45 @@ export async function POST(req: NextRequest) {
       ? [inputFields.ccColumn]
       : config?.ccColumns || [];
 
-  let requesterId =
+  const senderIds =
+    getPeopleIdsFromColumn(
+      itemData,
+      config?.senderColumn
+    );
+
+  const requesterId =
+    senderIds[0] ||
+    itemData?.creator?.id ||
     inputFields.requester?.id;
 
-  let recipientIds = [
-    inputFields.integrator?.id,
-    inputFields.additionalRecipients?.id,
-  ]
-    .filter(Boolean)
-    .map(String);
-
-  if (itemData) {
-    const senderIds =
-      getPeopleIdsFromColumn(itemData, senderColumn);
-
-    const mainRecipientIds =
-      getPeopleIdsFromColumn(itemData, recipientColumn);
-
-    const ccRecipientIds =
-      ccColumns.flatMap((columnId) =>
-        getPeopleIdsFromColumn(itemData, columnId)
-      );
-
-    requesterId =
-      senderIds[0] ||
-      itemData?.creator?.id;
-
-    recipientIds = [
-      ...mainRecipientIds,
-      ...ccRecipientIds,
-    ];
-  }
-
-  if (!requesterId && itemData?.creator?.id) {
-    requesterId = itemData.creator.id;
-  }
-
-  recipientIds = Array.from(new Set(recipientIds));
+  const recipientIds = itemData
+    ? getRecipientIds(
+        itemData,
+        recipientColumn,
+        ccColumns
+      )
+    : [
+        inputFields.integrator?.id,
+        inputFields.additionalRecipients?.id,
+      ]
+        .filter(Boolean)
+        .map(String);
 
   const template =
     rawMessage ||
     config?.template ||
     "";
 
-  const context = {
-    "requester.name": inputFields.requester?.name || "",
-    "integrator.name": inputFields.integrator?.name || "",
-    "item.id": itemData?.id || "",
-    "item.name": itemData?.name || "",
-    "item.url": itemData?.url || "",
-    "creator.name": itemData?.creator?.name || "",
-    "creator.email": itemData?.creator?.email || "",
-    "board.id": itemData?.board?.id || "",
-    "board.name": itemData?.board?.name || "",
-    "board.url": itemData?.board?.id
-      ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
-      : "",
-  };
-
   const message = renderTemplate(
-    removeActorLine(template),
-    context
+    cleanMessage(template),
+    buildContext(itemData, inputFields)
   );
 
   if (!requesterId) {
     console.error("NO SENDER FOUND", {
       boardId,
-      config,
       itemId,
+      config,
     });
 
     return NextResponse.json(
@@ -226,10 +282,10 @@ export async function POST(req: NextRequest) {
   if (recipientIds.length === 0) {
     console.error("NO RECIPIENT FOUND", {
       boardId,
+      itemId,
       recipientColumn,
       ccColumns,
       config,
-      itemId,
     });
 
     return NextResponse.json(
@@ -253,35 +309,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (config?.senderMode === "triggeredBy" && actorEmail) {
-    try {
-      await sendTeamsMessageFromEmail(
-        actorEmail,
-        recipientIds,
-        message
-      );
-    } catch (error) {
-      console.error(
-        "AUTHOR NOT CONNECTED - FALLBACK TO CONFIGURED SENDER",
-        {
-          actorEmail,
-          error,
-        }
-      );
-
-      await sendTeamsMessage(
-        String(requesterId),
-        recipientIds,
-        message
-      );
-    }
-  } else {
-    await sendTeamsMessage(
-      String(requesterId),
-      recipientIds,
-      message
-    );
-  }
+  await sendMessage({
+    config,
+    actorEmail,
+    requesterId: String(requesterId),
+    recipientIds,
+    message,
+  });
 
   return NextResponse.json({
     success: true,
