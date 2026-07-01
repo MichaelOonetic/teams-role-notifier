@@ -39,28 +39,20 @@ function extractActorEmail(text: string) {
 }
 
 function removeActorLine(text: string) {
-  return text
-    .replace(/ACTOR=[^\n\r]+[\n\r]*/g, "")
-    .trim();
+  return text.replace(/ACTOR=[^\n\r]+[\n\r]*/g, "").trim();
 }
 
-function getPeopleIdsFromColumn(
-  itemData: any,
-  columnId?: string
-) {
+function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
   if (!columnId) return [];
 
-  const column =
-    itemData?.column_values?.find(
-      (value: any) =>
-        value.id === columnId
-    );
+  const column = itemData?.column_values?.find(
+    (value: any) => value.id === columnId
+  );
 
   if (!column?.value) return [];
 
   try {
-    const parsed =
-      JSON.parse(column.value);
+    const parsed = JSON.parse(column.value);
 
     const people =
       parsed.personsAndTeams ||
@@ -68,148 +60,115 @@ function getPeopleIdsFromColumn(
       [];
 
     return people
-      .filter(
-        (person: any) =>
-          person.kind === "person"
-      )
-      .map(
-        (person: any) =>
-          String(person.id)
-      );
+      .filter((person: any) => person.kind === "person")
+      .map((person: any) => String(person.id));
   } catch {
     return [];
   }
 }
 
-export async function POST(
-  req: NextRequest
-) {
+export async function POST(req: NextRequest) {
   const body = await req.json();
 
   console.log("MONDAY PAYLOAD:");
-  console.log(
-    JSON.stringify(body, null, 2)
-  );
+  console.log(JSON.stringify(body, null, 2));
 
   if (body.challenge) {
     return NextResponse.json({
-      challenge:
-        body.challenge,
+      challenge: body.challenge,
     });
   }
 
-  const actionUuid =
-  body.runtimeMetadata?.actionUuid;
+  const actionUuid = body.runtimeMetadata?.actionUuid;
 
-if (actionUuid) {
-  const alreadyProcessed =
-    await kv.get(
+  if (actionUuid) {
+    const alreadyProcessed = await kv.get(
       `monday-action:${actionUuid}`
     );
 
-  if (alreadyProcessed) {
-    console.log(
-      "DUPLICATE ACTION IGNORED",
-      actionUuid
-    );
+    if (alreadyProcessed) {
+      console.log("DUPLICATE ACTION IGNORED", actionUuid);
 
-    return NextResponse.json({
-      success: true,
-      duplicate: true,
-    });
+      return NextResponse.json({
+        success: true,
+        duplicate: true,
+      });
+    }
+
+    await kv.set(
+      `monday-action:${actionUuid}`,
+      {
+        processedAt: new Date().toISOString(),
+      },
+      {
+        ex: 60 * 60 * 24,
+      }
+    );
   }
 
-  await kv.set(
-    `monday-action:${actionUuid}`,
-    {
-      processedAt:
-        new Date().toISOString(),
-    },
-    {
-      ex: 60 * 60 * 24,
-    }
-  );
-}
-
-  const inputFields =
-    body.payload?.inputFields ||
-    {};
+  const inputFields = body.payload?.inputFields || {};
 
   const boardId =
-    body.runtimeMetadata
-      ?.hostMetadata
-      ?.hostInstanceId;
+    inputFields.boardId ||
+    body.runtimeMetadata?.hostMetadata?.hostInstanceId;
 
-  const rawMessage =
-    inputFields.message || "";
-
-  const actorEmail =
-    extractActorEmail(
-      rawMessage
-    );
+  const rawMessage = inputFields.message || "";
+  const actorEmail = extractActorEmail(rawMessage);
 
   const itemId =
     body.payload?.pulseId ||
     body.payload?.itemId ||
     body.event?.pulseId ||
     body.event?.itemId ||
-    extractItemIdFromText(
-      rawMessage
-    );
+    extractItemIdFromText(rawMessage);
 
   let itemData = null;
 
   if (itemId) {
-    itemData =
-      await getItemData(
-        String(itemId)
-      );
+    itemData = await getItemData(String(itemId));
   }
 
-  const config =
-    boardId
-      ? await kv.get<TeamsConfig>(
-          `teams-config:${boardId}`
-        )
-      : null;
+  const config = boardId
+    ? await kv.get<TeamsConfig>(`teams-config:${boardId}`)
+    : null;
+
+  const senderColumn =
+    config?.senderColumn;
+
+  const recipientColumn =
+    inputFields.recipientColumn ||
+    config?.recipientColumn;
+
+  const ccColumns =
+    inputFields.ccColumn
+      ? [inputFields.ccColumn]
+      : config?.ccColumns || [];
 
   let requesterId =
     inputFields.requester?.id;
 
   let recipientIds = [
     inputFields.integrator?.id,
-    inputFields
-      ?.additionalRecipients
-      ?.id,
+    inputFields.additionalRecipients?.id,
   ]
     .filter(Boolean)
     .map(String);
 
-  if (config && itemData) {
+  if (itemData) {
     const senderIds =
-      getPeopleIdsFromColumn(
-        itemData,
-        config.senderColumn
-      );
+      getPeopleIdsFromColumn(itemData, senderColumn);
 
     const mainRecipientIds =
-      getPeopleIdsFromColumn(
-        itemData,
-        config.recipientColumn
+      getPeopleIdsFromColumn(itemData, recipientColumn);
+
+    const ccRecipientIds =
+      ccColumns.flatMap((columnId) =>
+        getPeopleIdsFromColumn(itemData, columnId)
       );
 
-    const ccRecipientIds = (
-      config.ccColumns || []
-    ).flatMap(
-      (columnId) =>
-        getPeopleIdsFromColumn(
-          itemData,
-          columnId
-        )
-    );
-
     requesterId =
-      senderIds[0];
+      senderIds[0] ||
+      itemData?.creator?.id;
 
     recipientIds = [
       ...mainRecipientIds,
@@ -217,10 +176,11 @@ if (actionUuid) {
     ];
   }
 
-  recipientIds =
-    Array.from(
-      new Set(recipientIds)
-    );
+  if (!requesterId && itemData?.creator?.id) {
+    requesterId = itemData.creator.id;
+  }
+
+  recipientIds = Array.from(new Set(recipientIds));
 
   const template =
     rawMessage ||
@@ -228,104 +188,72 @@ if (actionUuid) {
     "";
 
   const context = {
-    "requester.name":
-      inputFields.requester
-        ?.name || "",
-
-    "integrator.name":
-      inputFields.integrator
-        ?.name || "",
-
-    "item.id":
-      itemData?.id || "",
-
-    "item.name":
-      itemData?.name || "",
-
-    "item.url":
-      itemData?.url || "",
-
-    "board.id":
-      itemData?.board?.id || "",
-
-    "board.name":
-      itemData?.board?.name ||
-      "",
-
-    "board.url":
-      itemData?.board?.id
-        ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
-        : "",
+    "requester.name": inputFields.requester?.name || "",
+    "integrator.name": inputFields.integrator?.name || "",
+    "item.id": itemData?.id || "",
+    "item.name": itemData?.name || "",
+    "item.url": itemData?.url || "",
+    "creator.name": itemData?.creator?.name || "",
+    "creator.email": itemData?.creator?.email || "",
+    "board.id": itemData?.board?.id || "",
+    "board.name": itemData?.board?.name || "",
+    "board.url": itemData?.board?.id
+      ? `https://oonetic-company.monday.com/boards/${itemData.board.id}`
+      : "",
   };
 
-  const message =
-    renderTemplate(
-      removeActorLine(
-        template
-      ),
-      context
-    );
+  const message = renderTemplate(
+    removeActorLine(template),
+    context
+  );
 
   if (!requesterId) {
-    console.error(
-      "NO SENDER FOUND",
-      {
-        boardId,
-        config,
-      }
-    );
+    console.error("NO SENDER FOUND", {
+      boardId,
+      config,
+      itemId,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error:
-          "No sender found",
+        error: "No sender found",
       },
       { status: 400 }
     );
   }
 
-  if (
-    recipientIds.length === 0
-  ) {
-    console.error(
-      "NO RECIPIENT FOUND",
-      {
-        boardId,
-        config,
-      }
-    );
+  if (recipientIds.length === 0) {
+    console.error("NO RECIPIENT FOUND", {
+      boardId,
+      recipientColumn,
+      ccColumns,
+      config,
+      itemId,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error:
-          "No recipient found",
+        error: "No recipient found",
       },
       { status: 400 }
     );
   }
 
   if (!message) {
-    console.error(
-      "EMPTY MESSAGE"
-    );
+    console.error("EMPTY MESSAGE");
 
     return NextResponse.json(
       {
         success: false,
-        error:
-          "Message is empty",
+        error: "Message is empty",
       },
       { status: 400 }
     );
   }
 
-  if (
-    config?.senderMode ===
-      "triggeredBy" &&
-    actorEmail
-  ) {
+  if (config?.senderMode === "triggeredBy" && actorEmail) {
     try {
       await sendTeamsMessageFromEmail(
         actorEmail,
