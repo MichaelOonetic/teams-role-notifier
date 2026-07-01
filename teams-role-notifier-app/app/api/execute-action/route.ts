@@ -23,8 +23,19 @@ function extractItemIdFromText(text: string) {
 }
 
 function extractActorEmail(text: string) {
-  const match = text.match(/ACTOR=([^\s]+)/);
-  return match?.[1] || null;
+  const actorMatch = text.match(
+    /ACTOR=([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
+  );
+
+  if (actorMatch?.[1]) {
+    return actorMatch[1].toLowerCase();
+  }
+
+  const emailMatch = text.match(
+    /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
+  );
+
+  return emailMatch?.[1]?.toLowerCase() || null;
 }
 
 function removeActorLine(text: string) {
