@@ -173,15 +173,6 @@ if (actionUuid) {
         )
       : null;
 
-  console.log("BOARD CONFIG:");
-console.log(JSON.stringify(config, null, 2));
-
-console.log("SENDER MODE:");
-console.log(config?.senderMode);
-
-console.log("ACTOR EMAIL:");
-console.log(actorEmail);    
-
   let requesterId =
     inputFields.requester?.id;
 
