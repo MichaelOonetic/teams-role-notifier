@@ -5,7 +5,8 @@ export type ExecutionDiagnostic = {
   date: string;
 
   boardId: string;
-  automation: string;
+
+  event: string;
 
   sender: {
     mode: string;
@@ -14,9 +15,9 @@ export type ExecutionDiagnostic = {
   };
 
   recipients: string[];
-  cc: string[];
 
   success: boolean;
+
   error?: string;
 
   durationMs: number;
