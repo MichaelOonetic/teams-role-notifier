@@ -26,19 +26,25 @@ export type ExecutionDiagnostic = {
 export async function saveExecution(
   diagnostic: ExecutionDiagnostic
 ) {
-  const key =
-    `teams-history:${diagnostic.boardId}`;
+  const key = `teams-history:${diagnostic.boardId}`;
+
+  console.log("SAVE DIAGNOSTIC");
+  console.log("KEY:", key);
+  console.log(JSON.stringify(diagnostic, null, 2));
 
   const history =
-    (await kv.get<
-      ExecutionDiagnostic[]
-    >(key)) || [];
+    (await kv.get<ExecutionDiagnostic[]>(key)) || [];
 
   history.unshift(diagnostic);
 
   await kv.set(
     key,
     history.slice(0, 100)
+  );
+
+  console.log(
+    "DIAGNOSTIC SAVED:",
+    history.length
   );
 }
 
