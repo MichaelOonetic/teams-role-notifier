@@ -8,6 +8,7 @@ import {
 } from "@/lib/teams";
 
 import { renderTemplate } from "@/lib/render-template";
+import { saveExecution } from "@/lib/diagnostics";
 
 type TeamsConfig = {
   senderMode?: string;
@@ -43,6 +44,24 @@ function cleanMessage(text: string) {
   return text.replace(/ACTOR=[^\n\r]+[\n\r]*/g, "").trim();
 }
 
+function detectEvent(text: string) {
+  const value = text.toLowerCase();
+
+  if (value.includes("commentaire") || value.includes("update")) {
+    return "Update created";
+  }
+
+  if (value.includes("statut")) {
+    return "Status changed";
+  }
+
+  if (value.includes("créée") || value.includes("créé")) {
+    return "Item created";
+  }
+
+  return "Monday automation";
+}
+
 function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
   if (!columnId) return [];
 
@@ -72,7 +91,6 @@ async function ignoreDuplicateAction(actionUuid?: string) {
   if (!actionUuid) return false;
 
   const key = `monday-action:${actionUuid}`;
-
   const alreadyProcessed = await kv.get(key);
 
   if (alreadyProcessed) {
@@ -82,12 +100,8 @@ async function ignoreDuplicateAction(actionUuid?: string) {
 
   await kv.set(
     key,
-    {
-      processedAt: new Date().toISOString(),
-    },
-    {
-      ex: ACTION_TTL_SECONDS,
-    }
+    { processedAt: new Date().toISOString() },
+    { ex: ACTION_TTL_SECONDS }
   );
 
   return false;
@@ -130,7 +144,7 @@ function getRecipientIds(
   );
 }
 
-async function sendMessage(params: {
+async function sendTeamsNotification(params: {
   config: TeamsConfig | null;
   actorEmail: string | null;
   requesterId: string;
@@ -153,7 +167,10 @@ async function sendMessage(params: {
         message
       );
 
-      return;
+      return {
+        senderEmail: actorEmail,
+        fallbackUsed: false,
+      };
     } catch (error) {
       console.error(
         "AUTHOR NOT CONNECTED - FALLBACK TO CONFIGURED SENDER",
@@ -170,9 +187,15 @@ async function sendMessage(params: {
     recipientIds,
     message
   );
+
+  return {
+    senderEmail: "configured-column",
+    fallbackUsed: true,
+  };
 }
 
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
   const body = await req.json();
 
   console.log("MONDAY PAYLOAD:");
@@ -184,10 +207,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const actionUuid =
+    body.runtimeMetadata?.actionUuid;
+
   const isDuplicate =
-    await ignoreDuplicateAction(
-      body.runtimeMetadata?.actionUuid
-    );
+    await ignoreDuplicateAction(actionUuid);
 
   if (isDuplicate) {
     return NextResponse.json({
@@ -199,8 +223,11 @@ export async function POST(req: NextRequest) {
   const inputFields = body.payload?.inputFields || {};
 
   const boardId =
-    inputFields.boardId ||
-    body.runtimeMetadata?.hostMetadata?.hostInstanceId;
+    String(
+      inputFields.boardId ||
+      body.runtimeMetadata?.hostMetadata?.hostInstanceId ||
+      ""
+    );
 
   const rawMessage = inputFields.message || "";
   const actorEmail = extractActorEmail(rawMessage);
@@ -263,24 +290,15 @@ export async function POST(req: NextRequest) {
     buildContext(itemData, inputFields)
   );
 
-  if (!requesterId) {
-    console.error("NO SENDER FOUND", {
-      boardId,
-      itemId,
-      config,
-    });
+  if (!requesterId || recipientIds.length === 0 || !message) {
+    const error =
+      !requesterId
+        ? "No sender found"
+        : recipientIds.length === 0
+          ? "No recipient found"
+          : "Message is empty";
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: "No sender found",
-      },
-      { status: 400 }
-    );
-  }
-
-  if (recipientIds.length === 0) {
-    console.error("NO RECIPIENT FOUND", {
+    console.error(error, {
       boardId,
       itemId,
       recipientColumn,
@@ -288,36 +306,90 @@ export async function POST(req: NextRequest) {
       config,
     });
 
+    await saveExecution({
+      id: actionUuid || crypto.randomUUID(),
+      date: new Date().toISOString(),
+      boardId,
+      event: detectEvent(rawMessage),
+      sender: {
+        mode: config?.senderMode || "configuredColumn",
+        email: actorEmail || "",
+        fallbackUsed: false,
+      },
+      recipients: recipientIds,
+      success: false,
+      error,
+      durationMs: Date.now() - startedAt,
+    });
+
     return NextResponse.json(
       {
         success: false,
-        error: "No recipient found",
+        error,
       },
       { status: 400 }
     );
   }
 
-  if (!message) {
-    console.error("EMPTY MESSAGE");
+  try {
+    const senderResult =
+      await sendTeamsNotification({
+        config,
+        actorEmail,
+        requesterId: String(requesterId),
+        recipientIds,
+        message,
+      });
+
+    await saveExecution({
+      id: actionUuid || crypto.randomUUID(),
+      date: new Date().toISOString(),
+      boardId,
+      event: detectEvent(rawMessage),
+      sender: {
+        mode: config?.senderMode || "configuredColumn",
+        email: senderResult.senderEmail,
+        fallbackUsed: senderResult.fallbackUsed,
+      },
+      recipients: recipientIds,
+      success: true,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("SEND FAILED", error);
+
+    await saveExecution({
+      id: actionUuid || crypto.randomUUID(),
+      date: new Date().toISOString(),
+      boardId,
+      event: detectEvent(rawMessage),
+      sender: {
+        mode: config?.senderMode || "configuredColumn",
+        email: actorEmail || "",
+        fallbackUsed: false,
+      },
+      recipients: recipientIds,
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+      durationMs: Date.now() - startedAt,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error: "Message is empty",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
       },
-      { status: 400 }
+      { status: 500 }
     );
   }
-
-  await sendMessage({
-    config,
-    actorEmail,
-    requesterId: String(requesterId),
-    recipientIds,
-    message,
-  });
-
-  return NextResponse.json({
-    success: true,
-  });
 }
