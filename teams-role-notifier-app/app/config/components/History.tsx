@@ -120,7 +120,13 @@ export default function History() {
                   )}
                 </td>
 
-                <td style={td}>{item.recipients.length}</td>
+                <td style={td}>
+  {item.recipientsDetails?.map((user: any) => (
+    <div key={user.id}>
+      {user.name}
+    </div>
+  ))}
+</td>
 
                 <td style={td}>
                   {(item.durationMs / 1000).toFixed(2)} s

@@ -136,10 +136,17 @@ export default function Diagnostics() {
             </div>
 
             <div>
-              <strong>IDs destinataires :</strong>{" "}
-              {lastExecution.recipients.join(", ") || "-"}
-            </div>
+  <strong>Destinataires :</strong>
 
+  <ul style={{ marginTop: 8 }}>
+    {lastExecution.recipientsDetails?.map((user: any) => (
+      <li key={user.id}>
+        {user.name}
+        {user.email ? ` (${user.email})` : ""}
+      </li>
+    ))}
+  </ul>
+</div>
             <div>
               <strong>Durée :</strong>{" "}
               {(lastExecution.durationMs / 1000).toFixed(2)} s
