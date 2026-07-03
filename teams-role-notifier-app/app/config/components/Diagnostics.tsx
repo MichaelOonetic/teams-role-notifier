@@ -16,7 +16,7 @@ type Diagnostic = {
     fallbackUsed: boolean;
   };
   recipients: string[];
-   recipientsDetails?: {
+  recipientsDetails?: {
     id: string;
     name: string;
     email: string;
@@ -24,11 +24,16 @@ type Diagnostic = {
   success: boolean;
   error?: string;
   durationMs: number;
+  message?: string;
+  boardName?: string;
+  itemName?: string;
+  itemUrl?: string;
 };
 
 export default function Diagnostics() {
   const [boardId, setBoardId] = useState<number | null>(null);
-  const [lastExecution, setLastExecution] = useState<Diagnostic | null>(null);
+  const [lastExecution, setLastExecution] =
+    useState<Diagnostic | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -90,7 +95,7 @@ export default function Diagnostics() {
             borderRadius: 8,
             padding: 20,
             background: "#f7f7f7",
-            maxWidth: 760,
+            maxWidth: 900,
           }}
         >
           <h2>
@@ -126,8 +131,10 @@ export default function Diagnostics() {
             </div>
 
             <div>
-              <strong>Email expéditeur :</strong>{" "}
-              {lastExecution.sender.email || "-"}
+              <strong>Expéditeur :</strong>{" "}
+              {lastExecution.sender.email === "configured-column"
+                ? "Colonne configurée"
+                : lastExecution.sender.email || "-"}
             </div>
 
             <div>
@@ -136,26 +143,58 @@ export default function Diagnostics() {
             </div>
 
             <div>
-              <strong>Destinataires :</strong>{" "}
-              {lastExecution.recipients.length}
+              <strong>Destinataires :</strong>
+
+              <ul style={{ marginTop: 8 }}>
+                {lastExecution.recipientsDetails?.map((user) => (
+                  <li key={user.id}>
+                    {user.name}
+                    {user.email ? ` (${user.email})` : ""}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div>
-  <strong>Destinataires :</strong>
+              <strong>Board :</strong> {lastExecution.boardName || "-"}
+            </div>
 
-  <ul style={{ marginTop: 8 }}>
-    {lastExecution.recipientsDetails?.map((user: any) => (
-      <li key={user.id}>
-        {user.name}
-        {user.email ? ` (${user.email})` : ""}
-      </li>
-    ))}
-  </ul>
-</div>
+            <div>
+              <strong>Élément :</strong> {lastExecution.itemName || "-"}
+            </div>
+
+            {lastExecution.itemUrl && (
+              <div>
+                <strong>Lien :</strong>{" "}
+                <a href={lastExecution.itemUrl} target="_blank">
+                  Ouvrir l’élément Monday
+                </a>
+              </div>
+            )}
+
             <div>
               <strong>Durée :</strong>{" "}
               {(lastExecution.durationMs / 1000).toFixed(2)} s
             </div>
+
+            {lastExecution.message && (
+              <div style={{ marginTop: 24 }}>
+                <strong>Message envoyé</strong>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    padding: 16,
+                    background: "#fafafa",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: lastExecution.message,
+                  }}
+                />
+              </div>
+            )}
           </div>
         </section>
       )}
