@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import Sidebar from "./components/Sidebar";
-
 import Configuration from "./components/Configuration";
 import Diagnostics from "./components/Diagnostics";
 import History from "./components/History";
@@ -18,8 +17,9 @@ export default function ConfigPage() {
     <main
       style={{
         display: "flex",
-        height: "100vh",
+        minHeight: "100vh",
         fontFamily: "Arial",
+        background: "#fff",
       }}
     >
       <Sidebar
@@ -31,31 +31,25 @@ export default function ConfigPage() {
         style={{
           flex: 1,
           padding: 24,
-          overflow: "auto",
         }}
       >
-        {selectedTab ===
-          "configuration" && (
+        {selectedTab === "configuration" && (
           <Configuration />
         )}
 
-        {selectedTab ===
-          "diagnostics" && (
+        {selectedTab === "diagnostics" && (
           <Diagnostics />
         )}
 
-        {selectedTab ===
-          "history" && (
+        {selectedTab === "history" && (
           <History />
         )}
 
-        {selectedTab ===
-          "health" && (
+        {selectedTab === "health" && (
           <Health />
         )}
 
-        {selectedTab ===
-          "about" && (
+        {selectedTab === "about" && (
           <About />
         )}
       </div>
