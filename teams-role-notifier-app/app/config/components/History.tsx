@@ -16,6 +16,11 @@ type Diagnostic = {
     fallbackUsed: boolean;
   };
   recipients: string[];
+   recipientsDetails?: {
+    id: string;
+    name: string;
+    email: string;
+  }[];
   success: boolean;
   error?: string;
   durationMs: number;
