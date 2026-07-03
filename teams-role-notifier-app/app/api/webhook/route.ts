@@ -283,7 +283,6 @@ const integrateur = targetUsers.find(
     item.column_values.find((col: any) => col.id === "status")?.text ||
     event.value?.label?.text ||
     "Statut inconnu";
-  console.log("STATUS TEXT:", statusText);
 
 const notificationRules: any = {
   "Bloqué": {
@@ -394,7 +393,6 @@ for (const groupName of groupsToNotify) {
   results.push(groupResult);
 }
 
-  console.log("TEAMS NOTIFICATION RESULTS:", JSON.stringify(results, null, 2));
 
   return NextResponse.json({
     success: true,

@@ -34,9 +34,6 @@ export async function GET(req: NextRequest) {
   });
 
   const data = await response.json();
-  
-  console.log("MONDAY COLUMNS:");
-  console.log(JSON.stringify(data, null, 2));
 
   return NextResponse.json(data);
 }

@@ -90,15 +90,6 @@ async function sendTeamsMessageToUser(
 export async function POST(req: any) {
   const body = await req.json();
 
-console.log(
-  "MONDAY RUNTIME:",
-  JSON.stringify(body.runtimeMetadata, null, 2)
-);  
-
-  console.log(
-    "MONDAY ACTION PAYLOAD:",
-    JSON.stringify(body, null, 2)
-  );
 
   const boardId = body.payload.inputFields.board_id;
   const peopleColumnId = body.payload.inputFields.people_column;
@@ -137,11 +128,6 @@ const itemQuery = `
   });
 
   const mondayData = await mondayResponse.json();
-
-  console.log(
-    "MONDAY BOARD DATA:",
-    JSON.stringify(mondayData, null, 2)
-  );
 
   const item =
     mondayData.data.boards[0].items_page.items[0];
@@ -259,10 +245,6 @@ Statut : ${statusText}
     results.push(result);
   }
 
-  console.log(
-    "TEAMS RESULTS:",
-    JSON.stringify(results, null, 2)
-  );
 
   return NextResponse.json({
     success: true,

@@ -32,9 +32,6 @@ export async function GET(req: NextRequest) {
 
   const data = await response.json();
 
-  console.log("MICROSOFT OAUTH CALLBACK:");
-  console.log(data);
-
   const accessToken = data.access_token;
   const refreshToken = data.refresh_token;
 
@@ -48,16 +45,6 @@ export async function GET(req: NextRequest) {
   );
 
   const me = await meResponse.json();
-
-  console.log("MICROSOFT ME:");
-  console.log(me);
-
-  await kv.set(
-    `ms-refresh-token:${me.mail}`,
-    refreshToken
-  );
-
-  console.log("REFRESH TOKEN SAVED");
 
   return NextResponse.json({
     success: true,

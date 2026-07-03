@@ -178,9 +178,6 @@ ${item.url}`,
   );
 
   const messageData = await messageResponse.json();
-  console.log("TARGET EMAIL:", targetEmail);
-  console.log("TARGET CHAT:", targetChat?.id);
-  console.log("TEAMS MESSAGE RESPONSE:", JSON.stringify(messageData, null, 2));
 
   return NextResponse.json({
     success: true,
