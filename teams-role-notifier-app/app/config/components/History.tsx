@@ -117,7 +117,9 @@ export default function History() {
                 <td style={td}>{item.event}</td>
 
                 <td style={td}>
-                  {item.sender.email || "-"}
+                  {item.sender.email === "configured-column"
+  ? "Colonne configurée"
+  : item.sender.email || "-"}
                   {item.sender.fallbackUsed && (
                     <div style={{ fontSize: 12, color: "#777" }}>
                       fallback utilisé
