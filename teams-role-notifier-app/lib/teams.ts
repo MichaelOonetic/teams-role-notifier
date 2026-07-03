@@ -2,6 +2,12 @@ import { kv } from "@vercel/kv";
 
 export const runtime = "nodejs";
 
+export type MondayUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 async function getAccessTokenFromRefreshToken(refreshToken: string) {
   const response = await fetch(
     `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
@@ -29,8 +35,6 @@ async function getAccessTokenFromRefreshToken(refreshToken: string) {
 
   const data = await response.json();
 
-  console.log("REFRESH TOKEN OK");
-
   if (!response.ok) {
     throw new Error(`Refresh token failed: ${JSON.stringify(data)}`);
   }
@@ -38,12 +42,19 @@ async function getAccessTokenFromRefreshToken(refreshToken: string) {
   return data.access_token;
 }
 
-async function getMondayUserEmail(mondayUserId: string) {
+export async function getMondayUsers(
+  mondayUserIds: string[]
+): Promise<MondayUser[]> {
+  const ids = Array.from(new Set(mondayUserIds.filter(Boolean)));
+
+  if (ids.length === 0) return [];
+
   const query = `
     query {
-      users(ids: ${mondayUserId}) {
-        email
+      users(ids: [${ids.join(",")}]) {
+        id
         name
+        email
       }
     }
   `;
@@ -59,7 +70,28 @@ async function getMondayUserEmail(mondayUserId: string) {
 
   const data = await response.json();
 
-  return data.data.users[0].email;
+  return (data.data?.users || []).map((user: any) => ({
+    id: String(user.id),
+    name: user.name || "",
+    email: user.email || "",
+  }));
+}
+
+export async function getMondayUser(
+  mondayUserId: string
+): Promise<MondayUser | null> {
+  const users = await getMondayUsers([mondayUserId]);
+  return users[0] || null;
+}
+
+async function getMondayUserEmail(mondayUserId: string) {
+  const user = await getMondayUser(mondayUserId);
+
+  if (!user?.email) {
+    throw new Error(`Monday user email not found: ${mondayUserId}`);
+  }
+
+  return user.email;
 }
 
 async function getTeamsUserId(token: string, email: string) {
@@ -73,9 +105,6 @@ async function getTeamsUserId(token: string, email: string) {
   );
 
   const data = await response.json();
-
-  console.log("GRAPH USER:");
-  console.log(data);
 
   if (!response.ok) {
     throw new Error(`Get Teams user failed: ${JSON.stringify(data)}`);
@@ -119,9 +148,6 @@ async function createOrGetChat(token: string, targetUserId: string) {
 
   const data = await response.json();
 
-  console.log("CREATE CHAT RESPONSE:");
-  console.log(data);
-
   if (!response.ok) {
     throw new Error(`Create chat failed: ${JSON.stringify(data)}`);
   }
@@ -129,18 +155,7 @@ async function createOrGetChat(token: string, targetUserId: string) {
   return data.id;
 }
 
-function linkify(text: string) {
-  return text.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1">$1</a>'
-  );
-}
-
-async function sendMessageToChat(
-  token: string,
-  chatId: string,
-  text: string
-) {
+async function sendMessageToChat(token: string, chatId: string, text: string) {
   const response = await fetch(
     `https://graph.microsoft.com/v1.0/chats/${chatId}/messages`,
     {
@@ -152,16 +167,13 @@ async function sendMessageToChat(
       body: JSON.stringify({
         body: {
           contentType: "html",
-          content: text.replace(/\n/g, "<br>")
+          content: text.replace(/\n/g, "<br>"),
         },
       }),
     }
   );
 
   const data = await response.json();
-
-  console.log("SEND MESSAGE RESPONSE:");
-  console.log(data);
 
   if (!response.ok) {
     throw new Error(`Send message failed: ${JSON.stringify(data)}`);
@@ -180,37 +192,30 @@ export async function sendTeamsMessageFromEmail(
   );
 
   if (!refreshToken) {
-    throw new Error(
-      `No refresh token found for sender: ${senderEmail}`
-    );
+    throw new Error(`No refresh token found for sender: ${senderEmail}`);
   }
 
-  const delegatedToken =
-    await getAccessTokenFromRefreshToken(refreshToken);
+  const delegatedToken = await getAccessTokenFromRefreshToken(refreshToken);
 
   for (const recipientMondayUserId of recipientMondayUserIds) {
     const targetEmail = await getMondayUserEmail(recipientMondayUserId);
 
-if (
-  targetEmail.toLowerCase() === senderEmail.toLowerCase()
-) {
-  console.log("SKIP SELF MESSAGE:", targetEmail);
-  continue;
-}
+    if (targetEmail.toLowerCase() === senderEmail.toLowerCase()) {
+      continue;
+    }
 
-console.log("TARGET EMAIL:");
-console.log(targetEmail);
+    const targetTeamsUserId = await getTeamsUserId(
+      delegatedToken,
+      targetEmail
+    );
 
-const targetTeamsUserId =
-  await getTeamsUserId(delegatedToken, targetEmail);
-
-    const chatId =
-      await createOrGetChat(delegatedToken, targetTeamsUserId);
+    const chatId = await createOrGetChat(
+      delegatedToken,
+      targetTeamsUserId
+    );
 
     await sendMessageToChat(delegatedToken, chatId, text);
   }
-
-  console.log("DELEGATED MESSAGE SENT");
 }
 
 export async function sendTeamsMessage(
@@ -218,8 +223,7 @@ export async function sendTeamsMessage(
   recipientMondayUserIds: string[],
   text: string
 ) {
-  const requesterEmail =
-    await getMondayUserEmail(requesterMondayUserId);
+  const requesterEmail = await getMondayUserEmail(requesterMondayUserId);
 
   await sendTeamsMessageFromEmail(
     requesterEmail,
@@ -274,9 +278,6 @@ export async function getItemData(itemId: string) {
   });
 
   const data = await response.json();
-
-  console.log("MONDAY ITEM DATA:");
-  console.log(JSON.stringify(data, null, 2));
 
   return data.data.items[0];
 }
