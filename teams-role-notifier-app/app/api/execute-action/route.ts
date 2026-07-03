@@ -320,6 +320,10 @@ export async function POST(req: NextRequest) {
       success: false,
       error,
       durationMs: Date.now() - startedAt,
+      message,
+boardName: itemData?.board?.name || "",
+itemName: itemData?.name || "",
+itemUrl: itemData?.url || "",
     });
 
     return NextResponse.json(
@@ -354,6 +358,10 @@ export async function POST(req: NextRequest) {
       recipients: recipientIds,
       success: true,
       durationMs: Date.now() - startedAt,
+      message,
+boardName: itemData?.board?.name || "",
+itemName: itemData?.name || "",
+itemUrl: itemData?.url || "",
     });
 
     return NextResponse.json({
@@ -379,6 +387,10 @@ export async function POST(req: NextRequest) {
           ? error.message
           : "Unknown error",
       durationMs: Date.now() - startedAt,
+      message,
+boardName: itemData?.board?.name || "",
+itemName: itemData?.name || "",
+itemUrl: itemData?.url || "",
     });
 
     return NextResponse.json(
