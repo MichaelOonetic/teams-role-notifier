@@ -16,14 +16,14 @@ export async function GET() {
     "ChatMessage.Send",
   ].join(" ");
 
-  const authUrl =
-    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize` +
-    `?client_id=${clientId}` +
-    `&response_type=code` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&response_mode=query` +
-    `&scope=${encodeURIComponent(scopes)}`;
-    `&prompt=consent`;
+const authUrl =
+  `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize` +
+  `?client_id=${clientId}` +
+  `&response_type=code` +
+  `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+  `&response_mode=query` +
+  `&scope=${encodeURIComponent(scopes)}` +
+  `&prompt=consent`;
 
   return NextResponse.redirect(authUrl);
 }

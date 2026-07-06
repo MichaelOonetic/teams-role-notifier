@@ -1,4 +1,3 @@
-import { kv } from "@vercel/kv";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -33,18 +32,7 @@ export async function GET(req: NextRequest) {
   const data = await response.json();
 
   const accessToken = data.access_token;
-  const refreshToken = data.refresh_token;
 
-  const meResponse = await fetch(
-    "https://graph.microsoft.com/v1.0/me",
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-  );
-
-  const me = await meResponse.json();
 
   return NextResponse.json({
     success: true,
