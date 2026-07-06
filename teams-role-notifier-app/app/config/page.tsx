@@ -8,6 +8,7 @@ import Diagnostics from "./components/Diagnostics";
 import History from "./components/History";
 import Health from "./components/Health";
 import About from "./components/About";
+import Verification from "./components/Verification";
 
 export default function ConfigPage() {
   const [selectedTab, setSelectedTab] =
@@ -47,6 +48,10 @@ export default function ConfigPage() {
 
         {selectedTab === "health" && (
           <Health />
+        )}
+
+        {selectedTab === "verification" && (
+          <Verification />
         )}
 
         {selectedTab === "about" && (

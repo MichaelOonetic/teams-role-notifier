@@ -23,6 +23,10 @@ const items = [
     label: "💚 Santé",
   },
   {
+  id: "verification",
+  label: "🧪 Vérification",
+},
+  {
     id: "about",
     label: "ℹ À propos",
   },
