@@ -15,7 +15,7 @@ export default function About() {
         <h2>Teams Role Notifier</h2>
 
         <p>
-          Application Monday.com permettant d'envoyer des notifications
+          Application Monday.com permettant d&apos;envoyer des notifications
           Microsoft Teams à partir des automatisations Monday.
         </p>
 
@@ -29,7 +29,7 @@ export default function About() {
           <li>Configuration par tableau</li>
           <li>Destinataires via colonnes People</li>
           <li>CC multiples</li>
-          <li>Auteur réel de l'action</li>
+          <li>Auteur réel de l&apos;action</li>
           <li>Fallback automatique</li>
           <li>Diagnostics</li>
           <li>Historique</li>

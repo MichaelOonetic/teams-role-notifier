@@ -21,7 +21,7 @@ const templates = {
 <br>
 
 <a href="{item.url}">
-Ouvrir l'item
+Ouvrir l&apos;item
 </a>`,
 
   columnChanged: `<b>Modification de colonne</b>
@@ -31,7 +31,7 @@ Ouvrir l'item
 Une valeur a été modifiée.
 
 <a href="{item.url}">
-Ouvrir l'item
+Ouvrir l&apos;item
 </a>`,
 
   itemCreated: `<b>Nouvel élément créé</b>
@@ -41,7 +41,7 @@ Ouvrir l'item
 <b>Board :</b> {board.name}
 
 <a href="{item.url}">
-Ouvrir l'item
+Ouvrir l&apos;item
 </a>`,
 
   updateCreated: `<b>Nouveau commentaire</b>
@@ -51,10 +51,10 @@ Ouvrir l'item
 {update.body}
 
 <a href="{item.url}">
-Ouvrir l'item
+Ouvrir l&apos;item
 </a>`,
 
-  subitemStatusChanged: `<b>Changement de statut d'un sous-élément</b>
+  subitemStatusChanged: `<b>Changement de statut d&apos;un sous-élément</b>
 
 <b>Sous-élément :</b> {subitem.name}
 
@@ -63,7 +63,7 @@ Ouvrir l'item
 {currentStatus}
 
 <a href="{item.url}">
-Ouvrir l'élément parent
+Ouvrir l&apos;élément parent
 </a>`,
 };
 
@@ -163,7 +163,7 @@ export default function Configuration() {
           onChange={(e) => setSenderMode(e.target.value)}
         >
           <option value="configuredColumn">Colonne configurée</option>
-          <option value="triggeredBy">Auteur de l'action</option>
+          <option value="triggeredBy">Auteur de l&apos;action</option>
         </select>
 
         <label>Colonne expéditeur</label>
