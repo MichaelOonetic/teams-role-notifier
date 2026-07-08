@@ -271,9 +271,10 @@ function removeGroupChat(chatName: string) {
             type="text"
             placeholder="SUPPORT x OPS"
             value={groupChatInput}
-            onChange={(e) =>
-              setGroupChatInput(e.target.value)
-            }
+            onChange={(e) => {
+  console.log("INPUT =", e.target.value);
+  setGroupChatInput(e.target.value);
+}}
             style={{
               flex: 1,
               padding: 8,
