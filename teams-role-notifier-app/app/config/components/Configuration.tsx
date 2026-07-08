@@ -255,7 +255,7 @@ function removeGroupChat(chatName: string) {
         }}
       >
         <label>
-          <strong>Chats Teams</strong>
+          <strong>🟢 TEST CHATS TEAMS 🟢</strong>
         </label>
 
         <div
