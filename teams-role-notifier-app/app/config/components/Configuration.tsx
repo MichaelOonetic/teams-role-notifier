@@ -244,6 +244,78 @@ function removeGroupChat(chatName: string) {
               </label>
             ))}
         </div>
+</section>
+
+      <section
+        style={{
+          marginTop: 32,
+          maxWidth: 600,
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        <label>
+          <strong>Chats Teams</strong>
+        </label>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
+          <input
+            type="text"
+            placeholder="SUPPORT x OPS"
+            value={groupChatInput}
+            onChange={(e) =>
+              setGroupChatInput(e.target.value)
+            }
+            style={{
+              flex: 1,
+              padding: 8,
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={addGroupChat}
+          >
+            Ajouter
+          </button>
+        </div>
+
+        {groupChats.length > 0 && (
+          <div
+            style={{
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            {groupChats.map((chat) => (
+              <div
+                key={chat}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  border: "1px solid #ddd",
+                  borderRadius: 6,
+                  padding: 8,
+                }}
+              >
+                <span>{chat}</span>
+
+                <button
+                  type="button"
+                  onClick={() => removeGroupChat(chat)}
+                >
+                  Supprimer
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section style={{ marginTop: 32, maxWidth: 600 }}>
