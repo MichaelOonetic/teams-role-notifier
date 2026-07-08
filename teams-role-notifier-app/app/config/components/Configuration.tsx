@@ -75,7 +75,7 @@ export default function Configuration() {
   const [recipientColumn, setRecipientColumn] = useState("");
   const [senderMode, setSenderMode] = useState("configuredColumn");
   const [ccColumns, setCcColumns] = useState<string[]>([]);
-  const [groupChats, setGroupChats] = useState<string[]>([]);
+  const [groupChats, setGroupChats] = useState<string[]>(["TEST 1",]);
   const [groupChatInput, setGroupChatInput] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
