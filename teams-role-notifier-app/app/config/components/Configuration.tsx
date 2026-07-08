@@ -75,6 +75,8 @@ export default function Configuration() {
   const [recipientColumn, setRecipientColumn] = useState("");
   const [senderMode, setSenderMode] = useState("configuredColumn");
   const [ccColumns, setCcColumns] = useState<string[]>([]);
+  const [groupChats, setGroupChats] = useState<string[]>([]);
+  const [groupChatInput, setGroupChatInput] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const [message, setMessage] = useState(templates.statusChanged);
@@ -119,6 +121,10 @@ export default function Configuration() {
           setCcColumns(config.ccColumns);
         }
 
+        if (config.groupChats) {
+  setGroupChats(config.groupChats);
+}
+
         if (config.template) {
           setMessage(config.template);
         }
@@ -146,6 +152,28 @@ export default function Configuration() {
       setMessage(templates[value as keyof typeof templates]);
     }
   }
+
+  function addGroupChat() {
+  const value = groupChatInput.trim();
+
+  if (!value) {
+    return;
+  }
+
+  if (groupChats.includes(value)) {
+    setGroupChatInput("");
+    return;
+  }
+
+  setGroupChats([...groupChats, value]);
+  setGroupChatInput("");
+}
+
+function removeGroupChat(chatName: string) {
+  setGroupChats(
+    groupChats.filter((name) => name !== chatName)
+  );
+}
 
   return (
     <main>
@@ -244,6 +272,78 @@ export default function Configuration() {
         </select>
       </section>
 
+
+<section
+  style={{
+    marginTop: 32,
+    maxWidth: 600,
+    display: "grid",
+    gap: 12,
+  }}
+>
+  <label>
+    <strong>Chats Teams</strong>
+  </label>
+
+  <div
+    style={{
+      display: "flex",
+      gap: 8,
+    }}
+  >
+    <input
+      type="text"
+      placeholder="SUPPORT x OPS"
+      value={groupChatInput}
+      onChange={(e) =>
+        setGroupChatInput(e.target.value)
+      }
+      style={{
+        flex: 1,
+        padding: 8,
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={addGroupChat}
+    >
+      Ajouter
+    </button>
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gap: 8,
+    }}
+  >
+    {groupChats.map((chat) => (
+      <div
+        key={chat}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          border: "1px solid #ddd",
+          padding: 8,
+          borderRadius: 6,
+        }}
+      >
+        <span>{chat}</span>
+
+        <button
+          type="button"
+          onClick={() =>
+            removeGroupChat(chat)
+          }
+        >
+          Supprimer
+        </button>
+      </div>
+    ))}
+  </div>
+</section>
       <section
         style={{
           marginTop: 24,
@@ -280,6 +380,12 @@ export default function Configuration() {
               .map((c) => c.title)
               .join(", ") || "-"}
           </div>
+          <div>
+  Chats Teams :{" "}
+  {groupChats.length > 0
+    ? groupChats.join(", ")
+    : "-"}
+</div>
 
           <div>Modèle : {selectedTemplate || "-"}</div>
         </div>
@@ -311,15 +417,16 @@ export default function Configuration() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                boardId,
-                senderMode,
-                senderColumn,
-                recipientColumn,
-                ccColumns,
-                template: message,
-                selectedTemplate,
-              }),
+body: JSON.stringify({
+  boardId,
+  senderMode,
+  senderColumn,
+  recipientColumn,
+  ccColumns,
+  groupChats,
+  template: message,
+  selectedTemplate,
+}),
             });
 
             alert("Configuration enregistrée");

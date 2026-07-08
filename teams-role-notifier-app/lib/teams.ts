@@ -8,6 +8,21 @@ export type MondayUser = {
   email: string;
 };
 
+type RecipientResult = {
+  mondayUserId: string;
+  email?: string;
+  success: boolean;
+  skipped?: boolean;
+  error?: string;
+};
+
+type SendTeamsMessageResult = {
+  sent: number;
+  skipped: number;
+  failed: number;
+  results: RecipientResult[];
+};
+
 async function getAccessTokenFromRefreshToken(refreshToken: string) {
   const response = await fetch(
     `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
@@ -84,7 +99,7 @@ export async function getMondayUser(
   return users[0] || null;
 }
 
-async function getMondayUserEmail(mondayUserId: string) {
+export async function getMondayUserEmail(mondayUserId: string) {
   const user = await getMondayUser(mondayUserId);
 
   if (!user?.email) {
@@ -186,7 +201,7 @@ export async function sendTeamsMessageFromEmail(
   senderEmail: string,
   recipientMondayUserIds: string[],
   text: string
-) {
+): Promise<SendTeamsMessageResult> {
   const refreshToken = await kv.get<string>(
     `ms-refresh-token:${senderEmail.toLowerCase()}`
   );
@@ -197,25 +212,81 @@ export async function sendTeamsMessageFromEmail(
 
   const delegatedToken = await getAccessTokenFromRefreshToken(refreshToken);
 
-  for (const recipientMondayUserId of recipientMondayUserIds) {
-    const targetEmail = await getMondayUserEmail(recipientMondayUserId);
+  const uniqueRecipientIds = Array.from(
+    new Set(recipientMondayUserIds.filter(Boolean).map(String))
+  );
 
-    if (targetEmail.toLowerCase() === senderEmail.toLowerCase()) {
-      continue;
+  const results: RecipientResult[] = [];
+
+  for (const recipientMondayUserId of uniqueRecipientIds) {
+    try {
+      const targetEmail = await getMondayUserEmail(recipientMondayUserId);
+
+      if (targetEmail.toLowerCase() === senderEmail.toLowerCase()) {
+        results.push({
+          mondayUserId: recipientMondayUserId,
+          email: targetEmail,
+          success: true,
+          skipped: true,
+        });
+        continue;
+      }
+
+      const targetTeamsUserId = await getTeamsUserId(
+        delegatedToken,
+        targetEmail
+      );
+
+      const chatId = await createOrGetChat(
+        delegatedToken,
+        targetTeamsUserId
+      );
+
+      await sendMessageToChat(delegatedToken, chatId, text);
+
+      results.push({
+        mondayUserId: recipientMondayUserId,
+        email: targetEmail,
+        success: true,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+
+      console.error("PRIVATE TEAMS NOTIFICATION FAILED", {
+        senderEmail,
+        recipientMondayUserId,
+        error: message,
+      });
+
+      results.push({
+        mondayUserId: recipientMondayUserId,
+        success: false,
+        error: message,
+      });
     }
-
-    const targetTeamsUserId = await getTeamsUserId(
-      delegatedToken,
-      targetEmail
-    );
-
-    const chatId = await createOrGetChat(
-      delegatedToken,
-      targetTeamsUserId
-    );
-
-    await sendMessageToChat(delegatedToken, chatId, text);
   }
+
+  const sent = results.filter(
+    (result) => result.success && !result.skipped
+  ).length;
+
+  const skipped = results.filter((result) => result.skipped).length;
+
+  const failed = results.filter((result) => !result.success).length;
+
+  if (sent === 0 && failed > 0) {
+    throw new Error(
+      `All private Teams notifications failed: ${JSON.stringify(results)}`
+    );
+  }
+
+  return {
+    sent,
+    skipped,
+    failed,
+    results,
+  };
 }
 
 export async function sendTeamsMessage(
@@ -225,7 +296,7 @@ export async function sendTeamsMessage(
 ) {
   const requesterEmail = await getMondayUserEmail(requesterMondayUserId);
 
-  await sendTeamsMessageFromEmail(
+  return sendTeamsMessageFromEmail(
     requesterEmail,
     recipientMondayUserIds,
     text

@@ -5,7 +5,10 @@ import {
   sendTeamsMessage,
   sendTeamsMessageFromEmail,
   getItemData,
+  getMondayUserEmail,
 } from "@/lib/teams";
+
+import { sendTeamsGroupChatMessages } from "@/lib/group-chat";
 
 import { renderTemplate } from "@/lib/render-template";
 import { saveExecution } from "@/lib/diagnostics";
@@ -15,6 +18,7 @@ type TeamsConfig = {
   senderColumn?: string;
   recipientColumn?: string;
   ccColumns?: string[];
+  groupChats?: string[];
   template?: string;
 };
 
@@ -252,6 +256,7 @@ export async function POST(req: NextRequest) {
     inputFields.ccColumn
       ? [inputFields.ccColumn]
       : config?.ccColumns || [];
+const groupChats = config?.groupChats || [];
 
   const senderIds =
     getPeopleIdsFromColumn(
@@ -313,7 +318,10 @@ export async function POST(req: NextRequest) {
         email: actorEmail || "",
         fallbackUsed: false,
       },
-      recipients: recipientIds,
+      recipients: [
+  ...recipientIds,
+  ...groupChats.map((chat) => `GROUP:${chat}`),
+],
       success: false,
       error,
       durationMs: Date.now() - startedAt,
@@ -342,6 +350,22 @@ itemUrl: itemData?.url || "",
         message,
       });
 
+// Envoi vers les chats Teams configurés
+if (groupChats.length > 0) {
+  const senderEmail =
+    config?.senderMode === "triggeredBy"
+      ? actorEmail
+      : await getMondayUserEmail(String(requesterId));
+
+  if (senderEmail) {
+    await sendTeamsGroupChatMessages(
+      senderEmail,
+      groupChats,
+      message
+    );
+  }
+}
+
     await saveExecution({
       id: actionUuid || crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -352,7 +376,10 @@ itemUrl: itemData?.url || "",
         email: senderResult.senderEmail,
         fallbackUsed: senderResult.fallbackUsed,
       },
-      recipients: recipientIds,
+      recipients: [
+  ...recipientIds,
+  ...groupChats.map((chat) => `GROUP:${chat}`),
+],
       success: true,
       durationMs: Date.now() - startedAt,
       message,
@@ -377,7 +404,10 @@ itemUrl: itemData?.url || "",
         email: actorEmail || "",
         fallbackUsed: false,
       },
-      recipients: recipientIds,
+      recipients: [
+  ...recipientIds,
+  ...groupChats.map((chat) => `GROUP:${chat}`),
+],
       success: false,
       error:
         error instanceof Error
