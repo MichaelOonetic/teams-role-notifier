@@ -252,7 +252,7 @@ function removeGroupChat(chatName: string) {
         }}
       >
         <label>
-          <strong>🟢 TEST CHATS TEAMS 🟢</strong>
+          <strong>Ajouter un chat Teams</strong>
         </label>
 
         <div
@@ -263,7 +263,7 @@ function removeGroupChat(chatName: string) {
         >
           <input
             type="text"
-            placeholder="SUPPORT x OPS"
+            placeholder="Ajouter un chat Teams"
             value={groupChatInput}
             onChange={(e) => {
   const value = e.target.value;
@@ -387,6 +387,16 @@ function removeGroupChat(chatName: string) {
   {groupChats.length > 0
     ? groupChats.join(", ")
     : "-"}
+</div>
+
+<div
+  style={{
+    marginTop: 8,
+    fontSize: 12,
+    color: "#666",
+  }}
+>
+  {groupChats.length} chat(s) configuré(s)
 </div>
 
           <div>Modèle : {selectedTemplate || "-"}</div>
