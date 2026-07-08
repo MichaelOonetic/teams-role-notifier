@@ -277,12 +277,15 @@ function removeGroupChat(chatName: string) {
             }}
           />
 
-          <button
-            type="button"
-            onClick={addGroupChat}
-          >
-            Ajouter
-          </button>
+<button
+  type="button"
+  onClick={() => {
+    console.log("CLICK");
+    addGroupChat();
+  }}
+>
+  Ajouter
+</button>
         </div>
 
         {groupChats.length > 0 && (
