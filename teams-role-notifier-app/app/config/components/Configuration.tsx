@@ -263,7 +263,7 @@ function removeGroupChat(chatName: string) {
         >
           <input
             type="text"
-            placeholder="Ajouter un chat Teams, Ex. SUPPORT x OPS"
+            placeholder="Ajouter un chat Teams, ex. SUPPORT x OPS"
             value={groupChatInput}
             onChange={(e) => {
   const value = e.target.value;
