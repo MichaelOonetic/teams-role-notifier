@@ -154,23 +154,13 @@ export default function Configuration() {
   }
 
 function addGroupChat() {
-  console.log("groupChatInput =", groupChatInput);
-  console.log("groupChats avant =", groupChats);
-
-  const input = document.querySelector<HTMLInputElement>(
-  'input[placeholder="SUPPORT x OPS"]'
-);
-
-const value = input?.value.trim() || "";
+  const value = groupChatInput.trim();
 
   if (!value) {
-    console.log("Valeur vide");
     return;
   }
 
   const updated = [...groupChats, value];
-
-  console.log("groupChats après =", updated);
 
   setGroupChats(updated);
   setGroupChatInput("");
@@ -277,7 +267,6 @@ function removeGroupChat(chatName: string) {
             value={groupChatInput}
             onChange={(e) => {
   const value = e.target.value;
-  console.log("INPUT =", value);
   setGroupChatInput(value);
 }}
             style={{
