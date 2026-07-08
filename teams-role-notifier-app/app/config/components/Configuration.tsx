@@ -153,19 +153,22 @@ export default function Configuration() {
     }
   }
 
-  function addGroupChat() {
+function addGroupChat() {
+  console.log("groupChatInput =", groupChatInput);
+  console.log("groupChats avant =", groupChats);
+
   const value = groupChatInput.trim();
 
   if (!value) {
+    console.log("Valeur vide");
     return;
   }
 
-  if (groupChats.includes(value)) {
-    setGroupChatInput("");
-    return;
-  }
+  const updated = [...groupChats, value];
 
-  setGroupChats([...groupChats, value]);
+  console.log("groupChats après =", updated);
+
+  setGroupChats(updated);
   setGroupChatInput("");
 }
 
