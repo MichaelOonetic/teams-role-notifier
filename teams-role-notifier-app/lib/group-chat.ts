@@ -67,12 +67,13 @@ async function findGroupChat(
   )
 );
 
-  const chat = data.value.find(
-    (c: any) =>
-      c.chatType === "group" &&
-      c.topic?.toLowerCase() ===
-        topic.toLowerCase()
-  );
+const normalizedTopic = topic.trim().toLowerCase();
+
+const chat = data.value.find(
+  (c: any) =>
+    c.chatType === "group" &&
+    c.topic?.trim().toLowerCase() === normalizedTopic
+);
 
   if (!chat) {
     throw new Error(
