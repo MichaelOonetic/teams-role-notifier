@@ -54,6 +54,19 @@ async function findGroupChat(
     );
   }
 
+  console.log(
+  "AVAILABLE GROUP CHATS",
+  JSON.stringify(
+    data.value.map((c: any) => ({
+      id: c.id,
+      topic: c.topic,
+      chatType: c.chatType,
+    })),
+    null,
+    2
+  )
+);
+
   const chat = data.value.find(
     (c: any) =>
       c.chatType === "group" &&
