@@ -130,6 +130,7 @@ const result = await sendMessageToChat(
 console.log("Message envoyé");
 
 return result;
+}
 
 export async function sendTeamsGroupChatMessages(
   senderEmail: string,
