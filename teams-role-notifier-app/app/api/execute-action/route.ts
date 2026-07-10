@@ -270,6 +270,11 @@ export async function POST(req: NextRequest) {
     ? await kv.get<TeamsConfig>(`teams-config:${boardId}`)
     : null;
 
+  console.log(
+  "COLUMN VALUES",
+  JSON.stringify(itemData?.column_values, null, 2)
+);  
+
   const recipientColumn =
     inputFields.recipientColumn ||
     config?.recipientColumn;
