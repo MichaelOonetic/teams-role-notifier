@@ -297,6 +297,11 @@ const groupChats = itemData
     )
   : [];
 
+console.log("=== DEBUG TEAMS CHATS ===");
+console.log("Colonne :", TEAMS_CHATS_COLUMN);
+console.log("Valeurs :", groupChats);
+console.log("=========================");
+
   const senderIds =
     getPeopleIdsFromColumn(
       itemData,
@@ -361,6 +366,9 @@ const groupChats = itemData
   ...recipientIds,
   ...groupChats.map((chat) => `GROUP:${chat}`),
 ],
+debug: {
+    teamsChats: groupChats,
+  },
       success: false,
       error,
       durationMs: Date.now() - startedAt,
