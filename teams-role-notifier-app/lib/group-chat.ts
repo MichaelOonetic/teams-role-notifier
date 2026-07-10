@@ -93,6 +93,20 @@ export async function sendTeamsGroupChatMessage(
       senderEmail
     );
 
+    const me = await fetch(
+  "https://graph.microsoft.com/v1.0/me",
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+console.log(
+  "GRAPH USER",
+  await me.text()
+);
+
   const chatId =
     await findGroupChat(
       token,
