@@ -176,6 +176,25 @@ export default function History() {
               <div><strong>Erreur :</strong> {selected.error}</div>
             )}
 
+            {selected.debug && (
+  <div>
+    <strong>Debug</strong>
+
+    <pre
+      style={{
+        marginTop: 8,
+        padding: 12,
+        background: "#f5f5f5",
+        borderRadius: 8,
+        overflowX: "auto",
+        fontSize: 12,
+      }}
+    >
+      {JSON.stringify(selected.debug, null, 2)}
+    </pre>
+  </div>
+)}
+
             {selected.message && (
               <div>
                 <strong>Message envoyé</strong>
