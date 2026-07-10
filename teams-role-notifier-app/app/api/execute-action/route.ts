@@ -91,6 +91,28 @@ function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
   }
 }
 
+function getTeamsChatsFromColumn(
+  itemData: any,
+  columnId?: string
+): string[] {
+  if (!columnId) return [];
+
+  const column = itemData?.column_values?.find(
+    (value: any) => value.id === columnId
+  );
+
+  const text = column?.text?.trim();
+
+  if (!text) {
+    return [];
+  }
+
+  return text
+    .split(";")
+    .map((chat: string) => chat.trim())
+    .filter(Boolean);
+}
+
 async function ignoreDuplicateAction(actionUuid?: string) {
   if (!actionUuid) return false;
 
@@ -252,11 +274,23 @@ export async function POST(req: NextRequest) {
     inputFields.recipientColumn ||
     config?.recipientColumn;
 
-  const ccColumns =
-    inputFields.ccColumn
-      ? [inputFields.ccColumn]
-      : config?.ccColumns || [];
-const groupChats = config?.groupChats || [];
+const ccColumns =
+  inputFields.ccColumn
+    ? [inputFields.ccColumn]
+    : config?.ccColumns || [];
+
+/*
+ * Nom de la colonne texte contenant
+ * les chats Teams séparés par ';'
+ */
+const TEAMS_CHATS_COLUMN = "text_mm54j570";
+
+const groupChats = itemData
+  ? getTeamsChatsFromColumn(
+      itemData,
+      TEAMS_CHATS_COLUMN
+    )
+  : [];
 
   const senderIds =
     getPeopleIdsFromColumn(
