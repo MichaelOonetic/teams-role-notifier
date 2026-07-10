@@ -94,6 +94,11 @@ export async function sendTeamsGroupChatMessage(
       senderEmail
     );
 
+    console.log("========== GROUP CHAT ==========");
+console.log("Sender :", senderEmail);
+console.log("Chat :", chatName);
+console.log("================================");
+
     const me = await fetch(
   "https://graph.microsoft.com/v1.0/me",
   {
@@ -114,12 +119,17 @@ console.log(
       chatName
     );
 
-  return sendMessageToChat(
-    token,
-    chatId,
-    message
-  );
-}
+  console.log("Chat trouvé :", chatId);  
+
+const result = await sendMessageToChat(
+  token,
+  chatId,
+  message
+);
+
+console.log("Message envoyé");
+
+return result;
 
 export async function sendTeamsGroupChatMessages(
   senderEmail: string,
