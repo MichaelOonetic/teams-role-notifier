@@ -366,9 +366,6 @@ console.log("=========================");
   ...recipientIds,
   ...groupChats.map((chat) => `GROUP:${chat}`),
 ],
-debug: {
-    teamsChats: groupChats,
-  },
       success: false,
       error,
       durationMs: Date.now() - startedAt,
