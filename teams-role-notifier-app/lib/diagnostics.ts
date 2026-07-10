@@ -21,6 +21,7 @@ export type ExecutionDiagnostic = {
   boardName?: string;
   itemName?: string;
   itemUrl?: string;
+  debug?: Record<string, any>;
 };
 
 export async function saveExecution(diagnostic: ExecutionDiagnostic) {
