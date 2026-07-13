@@ -37,51 +37,44 @@ async function findGroupChat(
   token: string,
   topic: string
 ) {
-  const response = await fetch(
-    "https://graph.microsoft.com/v1.0/me/chats",
-    {
+  const normalizedTopic =
+    topic.trim().toLowerCase();
+
+  let url =
+    "https://graph.microsoft.com/v1.0/me/chats?$top=50&$select=id,topic,chatType";
+
+  while (url) {
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        `List chats failed: ${JSON.stringify(data)}`
+      );
     }
+
+    const chat = data.value.find(
+      (c: any) =>
+        c.chatType === "group" &&
+        c.topic?.trim().toLowerCase() ===
+          normalizedTopic
+    );
+
+    if (chat) {
+      return chat.id;
+    }
+
+    url = data["@odata.nextLink"] || "";
+  }
+
+  throw new Error(
+    `Teams group chat "${topic}" not found`
   );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      `List chats failed: ${JSON.stringify(data)}`
-    );
-  }
-
-  console.log(
-  "AVAILABLE GROUP CHATS",
-  JSON.stringify(
-    data.value.map((c: any) => ({
-      id: c.id,
-      topic: c.topic,
-      chatType: c.chatType,
-    })),
-    null,
-    2
-  )
-);
-
-const normalizedTopic = topic.trim().toLowerCase();
-
-const chat = data.value.find(
-  (c: any) =>
-    c.chatType === "group" &&
-    c.topic?.trim().toLowerCase() === normalizedTopic
-);
-
-  if (!chat) {
-    throw new Error(
-      `Teams group chat "${topic}" not found`
-    );
-  }
-
-  return chat.id;
 }
 
 export async function sendTeamsGroupChatMessage(
