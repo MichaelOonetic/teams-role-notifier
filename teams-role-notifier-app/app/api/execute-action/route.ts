@@ -384,6 +384,7 @@ itemUrl: itemData?.url || "",
     );
   }
 
+  let senderEmail: string | null = null;
   try {
     const senderResult =
       await sendTeamsNotification({
@@ -396,7 +397,7 @@ itemUrl: itemData?.url || "",
 
 // Envoi vers les chats Teams configurés
 if (groupChats.length > 0) {
-  const senderEmail =
+  senderEmail =
     config?.senderMode === "triggeredBy"
       ? actorEmail
       : await getMondayUserEmail(String(requesterId));
@@ -429,6 +430,7 @@ if (groupChats.length > 0) {
       message,
       debug: {
   teamsChats: groupChats,
+  senderEmail,
 },
 boardName: itemData?.board?.name || "",
 itemName: itemData?.name || "",
@@ -464,6 +466,7 @@ itemUrl: itemData?.url || "",
       message,
       debug: {
   teamsChats: groupChats,
+  senderEmail,
 },
 boardName: itemData?.board?.name || "",
 itemName: itemData?.name || "",
