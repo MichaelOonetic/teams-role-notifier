@@ -397,6 +397,7 @@ itemUrl: itemData?.url || "",
   }
 
   let senderEmail: string | null = null;
+  let groupChatResults: any[] = [];
   try {
     const senderResult =
       await sendTeamsNotification({
@@ -431,16 +432,18 @@ if (senderEmail) {
     })
   );
 
+  groupChatResults =
     await sendTeamsGroupChatMessages(
       senderEmail,
       groupChats,
       message
     );
-  } else {
-    throw new Error(
-      "No senderEmail available for Teams group notification."
-    );
-  }
+} else {
+  throw new Error(
+    "No senderEmail available for Teams group notification."
+  );
+}
+
 }
 
     await saveExecution({
@@ -461,8 +464,11 @@ if (senderEmail) {
       durationMs: Date.now() - startedAt,
       message,
       debug: {
-  teamsChats: groupChats,
   senderEmail,
+  senderResult: senderResult.senderEmail,
+  fallbackUsed: senderResult.fallbackUsed,
+  teamsChats: groupChats,
+  groupChatResults,
 },
 boardName: itemData?.board?.name || "",
 itemName: itemData?.name || "",
