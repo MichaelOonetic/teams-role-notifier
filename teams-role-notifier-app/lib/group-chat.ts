@@ -87,42 +87,17 @@ export async function sendTeamsGroupChatMessage(
       senderEmail
     );
 
-    console.log("========== GROUP CHAT ==========");
-console.log("Sender :", senderEmail);
-console.log("Chat :", chatName);
-console.log("================================");
-
-    const me = await fetch(
-  "https://graph.microsoft.com/v1.0/me",
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
-
-console.log(
-  "GRAPH USER",
-  await me.text()
-);
-
   const chatId =
     await findGroupChat(
       token,
       chatName
     );
 
-  console.log("Chat trouvé :", chatId);  
-
-const result = await sendMessageToChat(
+return sendMessageToChat(
   token,
   chatId,
   message
 );
-
-console.log("Message envoyé");
-
-return result;
 }
 
 export async function sendTeamsGroupChatMessages(

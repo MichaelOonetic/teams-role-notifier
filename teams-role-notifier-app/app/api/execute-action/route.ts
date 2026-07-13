@@ -331,10 +331,21 @@ console.log("=========================");
     config?.template ||
     "";
 
-  const message = renderTemplate(
-    cleanMessage(template),
-    buildContext(itemData, inputFields)
-  );
+let message = renderTemplate(
+  cleanMessage(template),
+  buildContext(itemData, inputFields)
+);
+
+if (itemData?.url) {
+  message += `
+    <br><br>
+    <hr>
+    <br>
+    👉 <a href="${itemData.url}">
+      Ouvrir l'élément dans Monday
+    </a>
+  `;
+}
 
   if (!requesterId || recipientIds.length === 0 || !message) {
     const error =
