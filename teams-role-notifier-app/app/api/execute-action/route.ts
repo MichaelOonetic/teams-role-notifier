@@ -397,10 +397,18 @@ itemUrl: itemData?.url || "",
 
 // Envoi vers les chats Teams configurés
 if (groupChats.length > 0) {
-  senderEmail =
-    config?.senderMode === "triggeredBy"
-      ? actorEmail
-      : await getMondayUserEmail(String(requesterId));
+  /*
+   * On utilise exactement le même expéditeur
+   * que celui qui a réellement servi pour les
+   * notifications privées.
+   */
+  if (senderResult.fallbackUsed) {
+    senderEmail = await getMondayUserEmail(
+      String(requesterId)
+    );
+  } else {
+    senderEmail = actorEmail;
+  }
 
   if (senderEmail) {
     await sendTeamsGroupChatMessages(
