@@ -223,6 +223,7 @@ async function sendTeamsNotification(params: {
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const body = await req.json();
+  console.log(JSON.stringify(body, null, 2));
 
   if (body.challenge) {
     return NextResponse.json({
