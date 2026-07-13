@@ -39,13 +39,26 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      sender,
-      groups: data.value.filter(
-        (chat: any) => chat.chatType === "group"
-      ),
-    });
+const { sendTeamsGroupChatMessages } = await import(
+  "@/lib/group-chat"
+);
+
+const result =
+  await sendTeamsGroupChatMessages(
+    sender,
+    ["OPERATIONS TEAM"],
+    "🧪 TEST Teams Role Notifier"
+  );
+
+return NextResponse.json({
+  success: true,
+  sender,
+  result,
+  groups: data.value.filter(
+    (chat: any) => chat.chatType === "group"
+  ),
+});
+
   } catch (error) {
     return NextResponse.json({
       success: false,
