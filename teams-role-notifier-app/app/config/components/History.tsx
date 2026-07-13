@@ -28,6 +28,11 @@ type Diagnostic = {
   boardName?: string;
   itemName?: string;
   itemUrl?: string;
+
+debug?: {
+  teamsChats?: string[];
+  senderEmail?: string | null;
+};  
 };
 
 export default function History() {
@@ -175,6 +180,22 @@ export default function History() {
             {selected.error && (
               <div><strong>Erreur :</strong> {selected.error}</div>
             )}
+
+            {selected.debug && (
+  <div>
+    <strong>Debug</strong>
+
+    <div>
+      <strong>Sender :</strong>{" "}
+      {selected.debug.senderEmail || "-"}
+    </div>
+
+    <div>
+      <strong>Teams Chats :</strong>{" "}
+      {selected.debug.teamsChats?.join(", ") || "-"}
+    </div>
+  </div>
+)}
 
             {selected.message && (
               <div>
