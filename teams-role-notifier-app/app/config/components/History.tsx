@@ -32,7 +32,9 @@ type Diagnostic = {
 debug?: {
   teamsChats?: string[];
   senderEmail?: string | null;
-};  
+  senderResult?: string;
+  fallbackUsed?: boolean;
+};
 };
 
 export default function History() {
@@ -182,20 +184,30 @@ export default function History() {
             )}
 
             {selected.debug && (
-  <div>
-    <strong>Debug</strong>
+              <div>
+                <strong>Debug</strong>
 
-    <div>
-      <strong>Sender :</strong>{" "}
-      {selected.debug.senderEmail || "-"}
-    </div>
+                <div>
+                  <strong>Sender :</strong>{" "}
+                  {selected.debug.senderEmail || "-"}
+                </div>
 
-    <div>
-      <strong>Teams Chats :</strong>{" "}
-      {selected.debug.teamsChats?.join(", ") || "-"}
-    </div>
-  </div>
-)}
+                <div>
+                  <strong>Sender Result :</strong>{" "}
+                  {selected.debug.senderResult || "-"}
+                </div>
+
+                <div>
+                  <strong>Fallback utilisé :</strong>{" "}
+                  {selected.debug.fallbackUsed ? "Oui" : "Non"}
+                </div>
+
+                <div>
+                  <strong>Teams Chats :</strong>{" "}
+                  {selected.debug.teamsChats?.join(", ") || "-"}
+                </div>
+              </div>
+            )}
 
             {selected.message && (
               <div>

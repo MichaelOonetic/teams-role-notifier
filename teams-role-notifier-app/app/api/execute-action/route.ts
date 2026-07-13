@@ -410,11 +410,23 @@ if (groupChats.length > 0) {
     senderEmail = actorEmail;
   }
 
-  if (senderEmail) {
+if (senderEmail) {
+  console.log(
+    "GROUP CHAT CALL",
+    JSON.stringify({
+      senderEmail,
+      groupChats,
+    })
+  );
+
     await sendTeamsGroupChatMessages(
       senderEmail,
       groupChats,
       message
+    );
+  } else {
+    throw new Error(
+      "No senderEmail available for Teams group notification."
     );
   }
 }
