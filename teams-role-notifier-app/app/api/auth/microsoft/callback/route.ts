@@ -6,9 +6,8 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
 
   if (!code) {
-    return NextResponse.json(
-      { error: "Missing code" },
-      { status: 400 }
+    return NextResponse.redirect(
+      new URL("/?error=missing_code", req.url)
     );
   }
 
@@ -17,25 +16,38 @@ export async function GET(req: NextRequest) {
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         client_id: process.env.AZURE_CLIENT_ID!,
         client_secret: process.env.AZURE_CLIENT_SECRET!,
         code,
         redirect_uri: process.env.MICROSOFT_REDIRECT_URI!,
-        grant_type: "authorization_code"
-      })
+        grant_type: "authorization_code",
+      }),
     }
   );
 
+  if (!response.ok) {
+    return NextResponse.redirect(
+      new URL("/?error=connection_failed", req.url)
+    );
+  }
+
   const data = await response.json();
 
-  const accessToken = data.access_token;
+  if (!data.access_token) {
+    return NextResponse.redirect(
+      new URL("/?error=no_token", req.url)
+    );
+  }
 
+  /*
+   * Ici, le token est récupéré comme auparavant.
+   * La logique de sauvegarde éventuelle reste inchangée.
+   */
 
-  return NextResponse.json({
-    success: true,
-    message: "Microsoft account connected. You can close this page."
-  });
+  return NextResponse.redirect(
+    new URL("/?connected=true", req.url)
+  );
 }
