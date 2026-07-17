@@ -25,7 +25,7 @@ export default function Home() {
         <div className="mt-12 flex flex-col md:flex-row gap-4 justify-center">
 
           <a
-            href="/api/auth/microsoft"
+            href="/api/auth/microsoft/login"
             className="rounded-xl bg-[#6264A7] px-8 py-4 text-white text-lg font-semibold text-center hover:opacity-90 transition"
           >
             Connect with Microsoft
