@@ -289,7 +289,9 @@ const recipientColumns = [
   inputFields.recipient2,
   inputFields.recipient3,
   inputFields.recipient4,
-].filter(Boolean);
+]
+  .flat()
+  .filter(Boolean);
 
 /*
  * Nom de la colonne texte contenant
@@ -342,17 +344,6 @@ let message = renderTemplate(
   cleanMessage(template),
   buildContext(itemData, inputFields)
 );
-
-if (itemData?.url) {
-  message += `
-    <br><br>
-    <hr>
-    <br>
-    👉 <a href="${itemData.url}">
-      Ouvrir l'élément dans Monday
-    </a>
-  `;
-}
 
   if (!requesterId || recipientIds.length === 0 || !message) {
     const error =
