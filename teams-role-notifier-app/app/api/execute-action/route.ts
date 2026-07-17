@@ -216,7 +216,6 @@ async function sendTeamsNotification(params: {
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const body = await req.json();
-  console.log(JSON.stringify(body, null, 2));
 
   if (body.challenge) {
     return NextResponse.json({
@@ -238,16 +237,6 @@ export async function POST(req: NextRequest) {
   }
 
   const inputFields = body.payload?.inputFields || {};
-
-  console.log(
-    "INPUT FIELDS",
-    JSON.stringify(inputFields, null, 2)
-  );
-
-  console.log(
-    "recipient2",
-    JSON.stringify(inputFields.recipient2, null, 2)
-  );
 
   const notifyTeamsChats =
     inputFields.notifyTeamsChats === true ||
@@ -279,11 +268,6 @@ export async function POST(req: NextRequest) {
     ? await kv.get<TeamsConfig>(`teams-config:${boardId}`)
     : null;
 
-  console.log(
-  "COLUMN VALUES",
-  JSON.stringify(itemData?.column_values, null, 2)
-);  
-
 const recipientColumns = [
   inputFields.recipient1,
   inputFields.recipient2,
@@ -306,11 +290,6 @@ const groupChats =
         TEAMS_CHATS_COLUMN
       )
     : [];
-
-console.log("=== DEBUG TEAMS CHATS ===");
-console.log("Colonne :", TEAMS_CHATS_COLUMN);
-console.log("Valeurs :", groupChats);
-console.log("=========================");
 
   const senderIds =
     getPeopleIdsFromColumn(
@@ -418,15 +397,6 @@ if (groupChats.length > 0) {
   } else {
     senderEmail = actorEmail;
   }
-
-if (senderEmail) {
-  console.log(
-    "GROUP CHAT CALL",
-    JSON.stringify({
-      senderEmail,
-      groupChats,
-    })
-  );
 
   groupChatResults =
     await sendTeamsGroupChatMessages(
