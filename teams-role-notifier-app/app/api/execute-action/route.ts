@@ -244,6 +244,11 @@ export async function POST(req: NextRequest) {
     JSON.stringify(inputFields, null, 2)
   );
 
+  console.log(
+    "recipient2",
+    JSON.stringify(inputFields.recipient2, null, 2)
+  );
+
   const notifyTeamsChats =
     inputFields.notifyTeamsChats === true ||
     inputFields.notifyTeamsChats === "true" ||
