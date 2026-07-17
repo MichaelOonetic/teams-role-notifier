@@ -152,21 +152,14 @@ function buildContext(itemData: any, inputFields: any) {
 
 function getRecipientIds(
   itemData: any,
-  recipientColumn?: string,
-  ccColumns: string[] = []
+  recipientColumns: string[] = []
 ) {
-  const mainRecipients =
-    getPeopleIdsFromColumn(itemData, recipientColumn);
-
-  const ccRecipients = ccColumns.flatMap((columnId) =>
-    getPeopleIdsFromColumn(itemData, columnId)
-  );
-
   return Array.from(
-    new Set([
-      ...mainRecipients,
-      ...ccRecipients,
-    ])
+    new Set(
+      recipientColumns.flatMap((columnId) =>
+        getPeopleIdsFromColumn(itemData, columnId)
+      )
+    )
   );
 }
 
@@ -246,6 +239,11 @@ export async function POST(req: NextRequest) {
 
   const inputFields = body.payload?.inputFields || {};
 
+  const notifyTeamsChats =
+    inputFields.notifyTeamsChats === true ||
+    inputFields.notifyTeamsChats === "true" ||
+    inputFields.notifyTeamsChats === "Yes";
+
   const boardId =
     String(
       inputFields.boardId ||
@@ -276,14 +274,12 @@ export async function POST(req: NextRequest) {
   JSON.stringify(itemData?.column_values, null, 2)
 );  
 
-  const recipientColumn =
-    inputFields.recipientColumn ||
-    config?.recipientColumn;
-
-const ccColumns =
-  inputFields.ccColumn
-    ? [inputFields.ccColumn]
-    : config?.ccColumns || [];
+const recipientColumns = [
+  inputFields.recipient1,
+  inputFields.recipient2,
+  inputFields.recipient3,
+  inputFields.recipient4,
+].filter(Boolean);
 
 /*
  * Nom de la colonne texte contenant
@@ -291,12 +287,13 @@ const ccColumns =
  */
 const TEAMS_CHATS_COLUMN = "text_mm54j570";
 
-const groupChats = itemData
-  ? getTeamsChatsFromColumn(
-      itemData,
-      TEAMS_CHATS_COLUMN
-    )
-  : [];
+const groupChats =
+  notifyTeamsChats && itemData
+    ? getTeamsChatsFromColumn(
+        itemData,
+        TEAMS_CHATS_COLUMN
+      )
+    : [];
 
 console.log("=== DEBUG TEAMS CHATS ===");
 console.log("Colonne :", TEAMS_CHATS_COLUMN);
@@ -314,12 +311,11 @@ console.log("=========================");
     itemData?.creator?.id ||
     inputFields.requester?.id;
 
-  const recipientIds = itemData
-    ? getRecipientIds(
-        itemData,
-        recipientColumn,
-        ccColumns
-      )
+const recipientIds = itemData
+  ? getRecipientIds(
+      itemData,
+      recipientColumns
+    )
     : [
         inputFields.integrator?.id,
         inputFields.additionalRecipients?.id,
@@ -359,8 +355,7 @@ if (itemData?.url) {
     console.error(error, {
       boardId,
       itemId,
-      recipientColumn,
-      ccColumns,
+      recipientColumns,
       config,
     });
 
