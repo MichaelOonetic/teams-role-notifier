@@ -398,16 +398,21 @@ if (groupChats.length > 0) {
     senderEmail = actorEmail;
   }
 
+if (senderEmail) {
+
   groupChatResults =
     await sendTeamsGroupChatMessages(
       senderEmail,
       groupChats,
       message
     );
+
 } else {
+
   throw new Error(
     "No senderEmail available for Teams group notification."
   );
+
 }
 
 }
