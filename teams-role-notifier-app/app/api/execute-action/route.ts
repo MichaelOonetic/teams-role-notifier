@@ -216,11 +216,6 @@ async function sendTeamsNotification(params: {
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const body = await req.json();
-  
-  console.log(
-    "ACTION METADATA",
-    JSON.stringify(body.runtimeMetadata, null, 2)
-  );
 
   if (body.challenge) {
     return NextResponse.json({
@@ -243,10 +238,14 @@ export async function POST(req: NextRequest) {
 
   const inputFields = body.payload?.inputFields || {};
 
-  const notifyTeamsChats =
-    inputFields.notifyTeamsChats === true ||
-    inputFields.notifyTeamsChats === "true" ||
-    inputFields.notifyTeamsChats === "Yes";
+  const groupsOnlyAction =
+    req.nextUrl.searchParams.get("mode") === "groups";
+
+const notifyTeamsChats =
+  groupsOnlyAction ||
+  inputFields.notifyTeamsChats === true ||
+  inputFields.notifyTeamsChats === "true" ||
+  inputFields.notifyTeamsChats === "Yes";
 
   const boardId =
     String(
@@ -329,13 +328,17 @@ let message = renderTemplate(
   buildContext(itemData, inputFields)
 );
 
-  if (!requesterId || recipientIds.length === 0 || !message) {
-    const error =
-      !requesterId
-        ? "No sender found"
-        : recipientIds.length === 0
-          ? "No recipient found"
-          : "Message is empty";
+const hasRecipients =
+  recipientIds.length > 0 ||
+  groupChats.length > 0;
+
+if (!requesterId || !hasRecipients || !message) {
+const error =
+  !requesterId
+    ? "No sender found"
+    : !hasRecipients
+      ? "No recipient found"
+      : "Message is empty";
 
     console.error(error, {
       boardId,
@@ -379,14 +382,26 @@ itemUrl: itemData?.url || "",
   let senderEmail: string | null = null;
   let groupChatResults: any[] = [];
   try {
-    const senderResult =
-      await sendTeamsNotification({
-        config,
-        actorEmail,
-        requesterId: String(requesterId),
-        recipientIds,
-        message,
-      });
+let senderResult: {
+  senderEmail: string;
+  fallbackUsed: boolean;
+};
+
+if (recipientIds.length > 0) {
+  senderResult =
+    await sendTeamsNotification({
+      config,
+      actorEmail,
+      requesterId: String(requesterId),
+      recipientIds,
+      message,
+    });
+} else {
+  senderResult = {
+    senderEmail: actorEmail || "configured-column",
+    fallbackUsed: !actorEmail,
+  };
+}
 
 // Envoi vers les chats Teams configurés
 if (groupChats.length > 0) {
