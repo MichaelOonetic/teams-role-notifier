@@ -206,21 +206,6 @@ function removeGroupChat(chatName: string) {
           ))}
         </select>
 
-        <label>Colonne destinataire principal</label>
-
-        <select
-          value={recipientColumn}
-          onChange={(e) => setRecipientColumn(e.target.value)}
-        >
-          <option value="">Choisir une colonne</option>
-
-          {peopleColumns.map((column) => (
-            <option key={column.id} value={column.id}>
-              {column.title}
-            </option>
-          ))}
-        </select>
-
         <label>Colonnes CC</label>
 
         <div style={{ display: "grid", gap: 8 }}>
