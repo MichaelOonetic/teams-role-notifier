@@ -217,8 +217,6 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const body = await req.json();
 
-  console.log("BODY =", JSON.stringify(body, null, 2));
-
   if (body.challenge) {
     return NextResponse.json({
       challenge: body.challenge,
@@ -282,6 +280,8 @@ const actorEmail = extractActorEmail(rawMessage);
     body.event?.pulseId ||
     body.event?.itemId ||
     extractItemId(rawMessage);
+
+    const missingItemLink = !itemId;
 
   const itemData = itemId
     ? await getItemData(String(itemId))
@@ -356,11 +356,13 @@ const hasItemLink =
   rawMessage.includes("/pulses/");
 
 const error =
-  !requesterId
-    ? "No sender found"
-    : !hasRecipients
-      ? "No recipient found"
-      : "Message is empty";
+  missingItemLink
+    ? 'Configuration invalide : la variable "Item\'s Link" est absente du message.'
+    : !requesterId
+      ? "No sender found"
+      : !hasRecipients
+        ? "No recipient found"
+        : "Message is empty";
 
     console.error(error, {
       boardId,
