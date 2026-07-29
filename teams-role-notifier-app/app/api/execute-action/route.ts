@@ -254,8 +254,25 @@ const notifyTeamsChats =
       ""
     );
 
-  const rawMessage = inputFields.message || "";
-  const actorEmail = extractActorEmail(rawMessage);
+const rawMessage = inputFields.message || "";
+
+// Vérifie que le message contient bien le lien monday
+const hasItemLink =
+  rawMessage.includes("/pulses/") ||
+  rawMessage.includes("Item's Link");
+
+if (!hasItemLink) {
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        'Configuration invalide : la variable "Item\'s Link" est absente du message.\n\nAjoutez la variable "Item\'s Link" dans le champ Message de votre automatisation monday.com.',
+    },
+    { status: 400 }
+  );
+}
+
+const actorEmail = extractActorEmail(rawMessage);
 
   const itemId =
     body.payload?.pulseId ||
@@ -333,12 +350,17 @@ const hasRecipients =
   groupChats.length > 0;
 
 if (!requesterId || !hasRecipients || !message) {
+const hasItemLink =
+  rawMessage.includes("/pulses/");
+
 const error =
-  !requesterId
-    ? "No sender found"
-    : !hasRecipients
-      ? "No recipient found"
-      : "Message is empty";
+  !hasItemLink
+    ? 'Configuration invalide : la variable "Item\'s Link" est absente du message.'
+    : !requesterId
+      ? "No sender found"
+      : !hasRecipients
+        ? "No recipient found"
+        : "Message is empty";
 
     console.error(error, {
       boardId,
