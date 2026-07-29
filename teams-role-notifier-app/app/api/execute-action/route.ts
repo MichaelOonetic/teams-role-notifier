@@ -217,6 +217,8 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const body = await req.json();
 
+  console.log("BODY =", JSON.stringify(body, null, 2));
+
   if (body.challenge) {
     return NextResponse.json({
       challenge: body.challenge,
@@ -354,13 +356,11 @@ const hasItemLink =
   rawMessage.includes("/pulses/");
 
 const error =
-  !hasItemLink
-    ? 'Configuration invalide : la variable "Item\'s Link" est absente du message.'
-    : !requesterId
-      ? "No sender found"
-      : !hasRecipients
-        ? "No recipient found"
-        : "Message is empty";
+  !requesterId
+    ? "No sender found"
+    : !hasRecipients
+      ? "No recipient found"
+      : "Message is empty";
 
     console.error(error, {
       boardId,
