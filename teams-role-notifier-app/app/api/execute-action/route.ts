@@ -339,7 +339,7 @@ if (!requesterId || !hasRecipients || !message) {
 
 const error =
   missingItemLink
-    ? 'Configuration invalide : la variable "Item\'s Link" est absente du message. Ajoutez la variable "Item\'s Link" dans le champ Message de votre automatisation monday.com, puis relancez le test. '
+    ? 'Configuration invalide : la variable "Item\'s Link" est absente du message. Ajoutez la variable "Item\'s Link" dans le champ Message de votre automatisation monday.com, puis relancez le test.'
     : !requesterId
       ? "No sender found"
       : !hasRecipients
