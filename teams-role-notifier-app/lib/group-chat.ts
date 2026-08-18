@@ -1,108 +1,10 @@
 import { getDelegatedAccessToken } from "./auth";
 
-type TeamsMention = {
-  id: number;
-  mentionText: string;
-  mentioned: {
-    user: {
-      id: string;
-      displayName: string;
-      userIdentityType: "aadUser";
-    };
-  };
-};
-
-async function getTeamsUserByEmail(
-  token: string,
-  email: string
-) {
-  const response = await fetch(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(
-      email
-    )}?$select=id,displayName,mail,userPrincipalName`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      `Teams user "${email}" not found: ${JSON.stringify(data)}`
-    );
-  }
-
-  return {
-    id: data.id as string,
-    displayName: data.displayName as string,
-  };
-}
-
-async function prepareMessageWithMentions(
-  token: string,
-  message: string
-): Promise<{
-  content: string;
-  mentions: TeamsMention[];
-}> {
-  const mentionPattern = /@\{([^}]+)\}/g;
-
-  const matches = Array.from(
-    message.matchAll(mentionPattern)
-  );
-
-  let content = message;
-  const mentions: TeamsMention[] = [];
-
-  for (let index = 0; index < matches.length; index++) {
-    const fullMatch = matches[index][0];
-    const email = matches[index][1].trim().toLowerCase();
-
-    const user = await getTeamsUserByEmail(
-      token,
-      email
-    );
-
-    const mentionId = mentions.length;
-
-    content = content.replace(
-      fullMatch,
-      `<at id="${mentionId}">${user.displayName}</at>`
-    );
-
-    mentions.push({
-      id: mentionId,
-      mentionText: user.displayName,
-      mentioned: {
-        user: {
-          id: user.id,
-          displayName: user.displayName,
-          userIdentityType: "aadUser",
-        },
-      },
-    });
-  }
-
-  return {
-    content: content.replace(/\n/g, "<br>"),
-    mentions,
-  };
-}
-
 async function sendMessageToChat(
   token: string,
   chatId: string,
   message: string
 ) {
-  const prepared =
-    await prepareMessageWithMentions(
-      token,
-      message
-    );
-
   const response = await fetch(
     `https://graph.microsoft.com/v1.0/chats/${chatId}/messages`,
     {
@@ -114,9 +16,8 @@ async function sendMessageToChat(
       body: JSON.stringify({
         body: {
           contentType: "html",
-          content: prepared.content,
+          content: message.replace(/\n/g, "<br>"),
         },
-        mentions: prepared.mentions,
       }),
     }
   );
@@ -192,11 +93,11 @@ export async function sendTeamsGroupChatMessage(
       chatName
     );
 
-  return sendMessageToChat(
-    token,
-    chatId,
-    message
-  );
+return sendMessageToChat(
+  token,
+  chatId,
+  message
+);
 }
 
 export async function sendTeamsGroupChatMessages(
