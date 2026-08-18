@@ -92,13 +92,12 @@ function getPeopleIdsFromColumn(itemData: any, columnId?: string) {
 }
 
 function getTeamsChatsFromColumn(
-  itemData: any,
-  columnId?: string
+  itemData: any
 ): string[] {
-  if (!columnId) return [];
-
   const column = itemData?.column_values?.find(
-    (value: any) => value.id === columnId
+    (value: any) =>
+      value?.column?.title?.trim().toLowerCase() ===
+      "teams chats"
   );
 
   const text = column?.text?.trim();
@@ -284,18 +283,9 @@ const recipientColumns = [
   .flat()
   .filter(Boolean);
 
-/*
- * Nom de la colonne texte contenant
- * les chats Teams séparés par ';'
- */
-const TEAMS_CHATS_COLUMN = "text_mm54j570";
-
 const groupChats =
   notifyTeamsChats && itemData
-    ? getTeamsChatsFromColumn(
-        itemData,
-        TEAMS_CHATS_COLUMN
-      )
+    ? getTeamsChatsFromColumn(itemData)
     : [];
 
   const senderIds =

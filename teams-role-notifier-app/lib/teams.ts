@@ -329,12 +329,16 @@ export async function getItemData(itemId: string) {
           name
         }
 
-        column_values {
-          id
-          text
-          type
-          value
-        }
+column_values {
+  id
+  text
+  type
+  value
+
+  column {
+    title
+  }
+}
       }
     }
   `;
