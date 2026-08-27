@@ -23,7 +23,10 @@ type SendTeamsMessageResult = {
   results: RecipientResult[];
 };
 
-async function getAccessTokenFromRefreshToken(refreshToken: string) {
+async function getAccessTokenFromRefreshToken(
+  refreshToken: string,
+  senderEmail: string
+) {
   const response = await fetch(
     `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`,
     {
@@ -51,7 +54,26 @@ async function getAccessTokenFromRefreshToken(refreshToken: string) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(`Refresh token failed: ${JSON.stringify(data)}`);
+    throw new Error(
+      `Refresh token failed: ${JSON.stringify(data)}`
+    );
+  }
+
+  /*
+   * Microsoft peut renvoyer un nouveau refresh token.
+   * Lorsqu'il est présent, on remplace automatiquement
+   * l'ancien token enregistré dans KV.
+   */
+  if (data.refresh_token) {
+    await kv.set(
+      `ms-refresh-token:${senderEmail.toLowerCase()}`,
+      data.refresh_token
+    );
+
+    console.log(
+      "MICROSOFT REFRESH TOKEN ROTATED",
+      senderEmail.toLowerCase()
+    );
   }
 
   return data.access_token;
@@ -210,7 +232,10 @@ export async function sendTeamsMessageFromEmail(
     throw new Error(`No refresh token found for sender: ${senderEmail}`);
   }
 
-  const delegatedToken = await getAccessTokenFromRefreshToken(refreshToken);
+  const delegatedToken = await getAccessTokenFromRefreshToken(
+  refreshToken,
+  senderEmail
+);
 
   const uniqueRecipientIds = Array.from(
     new Set(recipientMondayUserIds.filter(Boolean).map(String))
