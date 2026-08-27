@@ -4,6 +4,7 @@ type HomeProps = {
   searchParams?: Promise<{
     connected?: string;
     error?: string;
+    email?: string;
   }>;
 };
 
@@ -14,13 +15,13 @@ export default async function Home({
 
   const connected = params?.connected === "true";
   const error = params?.error;
+  const email = params?.email || "";
 
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
       <div className="w-full max-w-3xl rounded-2xl bg-white shadow-xl border border-slate-200 p-12">
 
         <div className="text-center">
-
           <h1 className="text-5xl font-bold text-slate-800">
             Teams Role Notifier
           </h1>
@@ -32,7 +33,6 @@ export default async function Home({
           <p className="mt-4 text-slate-500 leading-7">
             Automatically notify people and Microsoft Teams group chats whenever an automation is triggered in monday.com.
           </p>
-
         </div>
 
         {connected && (
@@ -40,6 +40,15 @@ export default async function Home({
             <strong>✅ Microsoft account connected successfully.</strong>
             <br />
             Your account is now ready to send Microsoft Teams notifications.
+
+            {email && (
+              <>
+                <br />
+                <span className="text-sm">
+                  Connected as: {email}
+                </span>
+              </>
+            )}
           </div>
         )}
 
@@ -54,13 +63,33 @@ export default async function Home({
         <div className="mt-12 flex flex-col md:flex-row gap-4 justify-center">
 
           <a
-  href="/api/auth/microsoft/login"
-  target="_blank"
-  rel="noopener noreferrer"
+            href="/api/auth/microsoft/login"
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-xl bg-[#6264A7] px-8 py-4 text-white text-lg font-semibold text-center hover:opacity-90 transition"
           >
             Connect with Microsoft
           </a>
+
+          {connected && email && (
+            <form
+              action="/api/auth/microsoft/logout"
+              method="post"
+            >
+              <input
+                type="hidden"
+                name="email"
+                value={email}
+              />
+
+              <button
+                type="submit"
+                className="w-full rounded-xl border border-red-300 px-8 py-4 text-lg font-semibold text-red-700 text-center hover:bg-red-50 transition"
+              >
+                Disconnect Microsoft
+              </button>
+            </form>
+          )}
 
           <Link
             href="/config"
@@ -108,13 +137,9 @@ export default async function Home({
         </div>
 
         <div className="mt-12 border-t pt-6 text-center text-sm text-slate-500">
-
           Teams Role Notifier v1.0
-
           <br />
-
           © OONETIC
-
         </div>
 
       </div>
