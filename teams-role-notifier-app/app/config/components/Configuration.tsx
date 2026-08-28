@@ -5,12 +5,6 @@ import mondaySdk from "monday-sdk-js";
 
 const monday = mondaySdk();
 
-type Column = {
-  id: string;
-  title: string;
-  type: string;
-};
-
 const templates = {
   statusChanged: `<b>Changement de statut</b>
 
@@ -68,18 +62,20 @@ Ouvrir l&apos;élément parent
 };
 
 export default function Configuration() {
-  const [boardId, setBoardId] = useState<number | null>(null);
-  const [columns, setColumns] = useState<Column[]>([]);
+  const [boardId, setBoardId] =
+    useState<number | null>(null);
 
-  const [senderColumn, setSenderColumn] = useState("");
-  const [recipientColumn, setRecipientColumn] = useState("");
-  const [senderMode, setSenderMode] = useState("configuredColumn");
-  const [ccColumns, setCcColumns] = useState<string[]>([]);
-  const [groupChats, setGroupChats] = useState<string[]>(["TEST 1",]);
-  const [groupChatInput, setGroupChatInput] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [groupChats, setGroupChats] =
+    useState<string[]>([]);
 
-  const [message, setMessage] = useState(templates.statusChanged);
+  const [groupChatInput, setGroupChatInput] =
+    useState("");
+
+  const [selectedTemplate, setSelectedTemplate] =
+    useState("");
+
+  const [message, setMessage] =
+    useState(templates.statusChanged);
 
   useEffect(() => {
     monday.listen("context", (res) => {
@@ -95,138 +91,128 @@ export default function Configuration() {
   useEffect(() => {
     if (!boardId) return;
 
-    fetch(`/api/monday/columns?boardId=${boardId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const boardColumns = data.data?.boards?.[0]?.columns || [];
-        setColumns(boardColumns);
-      });
-
     fetch(`/api/config/load?boardId=${boardId}`)
       .then((res) => res.json())
       .then((config) => {
-        if (config.senderMode) {
-          setSenderMode(config.senderMode);
-        }
-
-        if (config.senderColumn) {
-          setSenderColumn(config.senderColumn);
-        }
-
-        if (config.recipientColumn) {
-          setRecipientColumn(config.recipientColumn);
-        }
-
-        if (config.ccColumns) {
-          setCcColumns(config.ccColumns);
-        }
-
         if (config.groupChats) {
-  setGroupChats(config.groupChats);
-}
+          setGroupChats(config.groupChats);
+        }
 
         if (config.template) {
           setMessage(config.template);
         }
 
         if (config.selectedTemplate) {
-          setSelectedTemplate(config.selectedTemplate);
+          setSelectedTemplate(
+            config.selectedTemplate
+          );
         }
       });
   }, [boardId]);
-
-  const peopleColumns = columns.filter((column) => column.type === "people");
-
-  function toggleCcColumn(columnId: string) {
-    setCcColumns((current) =>
-      current.includes(columnId)
-        ? current.filter((id) => id !== columnId)
-        : [...current, columnId]
-    );
-  }
 
   function applyTemplate(value: string) {
     setSelectedTemplate(value);
 
     if (value in templates) {
-      setMessage(templates[value as keyof typeof templates]);
+      setMessage(
+        templates[
+          value as keyof typeof templates
+        ]
+      );
     }
   }
 
-function addGroupChat() {
-  const value = groupChatInput.trim();
+  function addGroupChat() {
+    const value =
+      groupChatInput.trim();
 
-  if (!value) {
-    return;
+    if (!value) {
+      return;
+    }
+
+    const updated = [
+      ...groupChats,
+      value,
+    ];
+
+    setGroupChats(updated);
+    setGroupChatInput("");
   }
 
-  const updated = [...groupChats, value];
-
-  setGroupChats(updated);
-  setGroupChatInput("");
-}
-
-function removeGroupChat(chatName: string) {
-  setGroupChats(
-    groupChats.filter((name) => name !== chatName)
-  );
-}
+  function removeGroupChat(
+    chatName: string
+  ) {
+    setGroupChats(
+      groupChats.filter(
+        (name) =>
+          name !== chatName
+      )
+    );
+  }
 
   return (
     <main>
       <h1>⚙ Configuration</h1>
 
       <p>
-        <strong>Board ID :</strong> {boardId || "chargement..."}
+        <strong>Board ID :</strong>{" "}
+        {boardId || "chargement..."}
       </p>
 
-      <section style={{ display: "grid", gap: 12, maxWidth: 600 }}>
-        <label>Mode expéditeur</label>
+      <section
+        style={{
+          marginTop: 24,
+          padding: 16,
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          background: "#f7f7f7",
+          maxWidth: 600,
+        }}
+      >
+        <strong>
+          👤 Expéditeur Teams
+        </strong>
 
-        <select
-          value={senderMode}
-          onChange={(e) => setSenderMode(e.target.value)}
+        <p
+          style={{
+            marginBottom: 0,
+            lineHeight: 1.5,
+          }}
         >
-          <option value="configuredColumn">Colonne configurée</option>
-          <option value="triggeredBy">Auteur de l&apos;action</option>
-        </select>
+          L&apos;utilisateur monday ayant
+          déclenché l&apos;automatisation
+          est automatiquement utilisé comme
+          expéditeur du message Teams.
+        </p>
+      </section>
 
-        <label>Colonne expéditeur</label>
+      <section
+        style={{
+          marginTop: 16,
+          padding: 16,
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          background: "#f7f7f7",
+          maxWidth: 600,
+        }}
+      >
+        <strong>
+          👥 Destinataires
+        </strong>
 
-        <select
-          value={senderColumn}
-          onChange={(e) => setSenderColumn(e.target.value)}
+        <p
+          style={{
+            marginBottom: 0,
+            lineHeight: 1.5,
+          }}
         >
-          <option value="">Choisir une colonne</option>
-
-          {peopleColumns.map((column) => (
-            <option key={column.id} value={column.id}>
-              {column.title}
-            </option>
-          ))}
-        </select>
-
-        <label>Colonnes CC</label>
-
-        <div style={{ display: "grid", gap: 8 }}>
-          {peopleColumns
-            .filter(
-              (column) =>
-                column.id !== senderColumn &&
-                column.id !== recipientColumn
-            )
-            .map((column) => (
-              <label key={column.id}>
-                <input
-                  type="checkbox"
-                  checked={ccColumns.includes(column.id)}
-                  onChange={() => toggleCcColumn(column.id)}
-                />{" "}
-                {column.title}
-              </label>
-            ))}
-        </div>
-</section>
+          Les destinataires sont définis
+          directement dans
+          l&apos;automatisation monday à
+          partir des colonnes People
+          sélectionnées.
+        </p>
+      </section>
 
       <section
         style={{
@@ -237,7 +223,9 @@ function removeGroupChat(chatName: string) {
         }}
       >
         <label>
-          <strong>Ajouter un chat Teams</strong>
+          <strong>
+            Ajouter un chat Teams
+          </strong>
         </label>
 
         <div
@@ -250,25 +238,23 @@ function removeGroupChat(chatName: string) {
             type="text"
             placeholder="Ajouter un chat Teams, ex. SUPPORT x OPS"
             value={groupChatInput}
-            onChange={(e) => {
-  const value = e.target.value;
-  setGroupChatInput(value);
-}}
+            onChange={(e) =>
+              setGroupChatInput(
+                e.target.value
+              )
+            }
             style={{
               flex: 1,
               padding: 8,
             }}
           />
 
-<button
-  type="button"
-  onClick={() => {
-    console.log("CLICK");
-    addGroupChat();
-  }}
->
-  ➕ Ajouter
-</button>
+          <button
+            type="button"
+            onClick={addGroupChat}
+          >
+            ➕ Ajouter
+          </button>
         </div>
 
         {groupChats.length > 0 && (
@@ -278,40 +264,60 @@ function removeGroupChat(chatName: string) {
               gap: 8,
             }}
           >
-            {groupChats.map((chat) => (
-              <div
-                key={chat}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  padding: 8,
-                }}
-              >
-                <span>{chat}</span>
-
-                <button
-                  type="button"
-                  onClick={() => removeGroupChat(chat)}
+            {groupChats.map(
+              (chat) => (
+                <div
+                  key={chat}
+                  style={{
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    alignItems:
+                      "center",
+                    border:
+                      "1px solid #ddd",
+                    borderRadius: 6,
+                    padding: 8,
+                  }}
                 >
-                  🗑 Supprimer
-                </button>
-              </div>
-            ))}
+                  <span>{chat}</span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeGroupChat(
+                        chat
+                      )
+                    }
+                  >
+                    🗑 Supprimer
+                  </button>
+                </div>
+              )
+            )}
           </div>
         )}
       </section>
 
-      <section style={{ marginTop: 32, maxWidth: 600 }}>
+      <section
+        style={{
+          marginTop: 32,
+          maxWidth: 600,
+        }}
+      >
         <label>
-          <strong>Bibliothèque de modèles</strong>
+          <strong>
+            Bibliothèque de modèles
+          </strong>
         </label>
 
         <select
           value={selectedTemplate}
-          onChange={(e) => applyTemplate(e.target.value)}
+          onChange={(e) =>
+            applyTemplate(
+              e.target.value
+            )
+          }
           style={{
             display: "block",
             width: "100%",
@@ -319,17 +325,33 @@ function removeGroupChat(chatName: string) {
             padding: 8,
           }}
         >
-          <option value="">Choisir un modèle</option>
-          <option value="itemCreated">📋 Item créé</option>
-          <option value="updateCreated">💬 Nouveau commentaire</option>
-          <option value="statusChanged">🔄 Changement de statut</option>
-          <option value="columnChanged">📝 Modification de colonne</option>
-          <option value="subitemStatusChanged">
+          <option value="">
+            Choisir un modèle
+          </option>
+
+          <option value="itemCreated">
+            📋 Item créé
+          </option>
+
+          <option value="updateCreated">
+            💬 Nouveau commentaire
+          </option>
+
+          <option value="statusChanged">
+            🔄 Changement de statut
+          </option>
+
+          <option value="columnChanged">
+            📝 Modification de colonne
+          </option>
+
+          <option
+            value="subitemStatusChanged"
+          >
             🧩 Statut de sous-élément
           </option>
         </select>
       </section>
-
 
       <section
         style={{
@@ -341,7 +363,9 @@ function removeGroupChat(chatName: string) {
           maxWidth: 600,
         }}
       >
-        <strong>Configuration active</strong>
+        <strong>
+          Configuration active
+        </strong>
 
         <div
           style={{
@@ -351,51 +375,58 @@ function removeGroupChat(chatName: string) {
           }}
         >
           <div>
-            Expéditeur :{" "}
-            {peopleColumns.find((c) => c.id === senderColumn)?.title || "-"}
+            Expéditeur :
+            Auteur de l&apos;action
+            (automatique)
           </div>
 
           <div>
-            Destinataire :{" "}
-            {peopleColumns.find((c) => c.id === recipientColumn)?.title || "-"}
+            Destinataires :
+            définis dans
+            l&apos;automatisation
           </div>
 
           <div>
-            CC :{" "}
-            {peopleColumns
-              .filter((c) => ccColumns.includes(c.id))
-              .map((c) => c.title)
-              .join(", ") || "-"}
+            Chats Teams :{" "}
+            {groupChats.length > 0
+              ? groupChats.join(", ")
+              : "-"}
           </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: "#666",
+            }}
+          >
+            {groupChats.length} chat(s)
+            configuré(s)
+          </div>
+
           <div>
-  Chats Teams :{" "}
-  {groupChats.length > 0
-    ? groupChats.join(", ")
-    : "-"}
-</div>
-
-<div
-  style={{
-    marginTop: 8,
-    fontSize: 12,
-    color: "#666",
-  }}
->
-  {groupChats.length} chat(s) configuré(s)
-</div>
-
-          <div>Modèle : {selectedTemplate || "-"}</div>
+            Modèle :{" "}
+            {selectedTemplate || "-"}
+          </div>
         </div>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section
+        style={{
+          marginTop: 32,
+        }}
+      >
         <label>
-          <strong>Template Teams</strong>
+          <strong>
+            Template Teams
+          </strong>
         </label>
 
         <textarea
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) =>
+            setMessage(e.target.value)
+          }
           rows={12}
           style={{
             width: "100%",
@@ -406,27 +437,33 @@ function removeGroupChat(chatName: string) {
         />
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section
+        style={{
+          marginTop: 32,
+        }}
+      >
         <button
           onClick={async () => {
-            await fetch("/api/config/save", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-body: JSON.stringify({
-  boardId,
-  senderMode,
-  senderColumn,
-  recipientColumn,
-  ccColumns,
-  groupChats,
-  template: message,
-  selectedTemplate,
-}),
-            });
+            await fetch(
+              "/api/config/save",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                },
+                body: JSON.stringify({
+                  boardId,
+                  groupChats,
+                  template: message,
+                  selectedTemplate,
+                }),
+              }
+            );
 
-            alert("Configuration enregistrée");
+            alert(
+              "Configuration enregistrée"
+            );
           }}
           style={{
             marginTop: 24,
@@ -439,19 +476,29 @@ body: JSON.stringify({
 
         <button
           onClick={async () => {
-            const response = await fetch("/api/config/test", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                boardId,
-              }),
-            });
+            const response =
+              await fetch(
+                "/api/config/test",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+                  },
+                  body:
+                    JSON.stringify({
+                      boardId,
+                    }),
+                }
+              );
 
-            const data = await response.json();
+            const data =
+              await response.json();
 
-            alert(data.message || "Test envoyé");
+            alert(
+              data.message ||
+                "Test envoyé"
+            );
           }}
           style={{
             marginLeft: 12,
@@ -466,16 +513,26 @@ body: JSON.stringify({
 
         <div
           style={{
-            border: "1px solid #ddd",
+            border:
+              "1px solid #ddd",
             borderRadius: 8,
             padding: 16,
             background: "#f7f7f7",
           }}
           dangerouslySetInnerHTML={{
             __html: message
-              .replaceAll("{item.name}", "Exemple ticket")
-              .replaceAll("{item.url}", "https://monday.com")
-              .replaceAll("{update.body}", "Exemple de commentaire"),
+              .replaceAll(
+                "{item.name}",
+                "Exemple ticket"
+              )
+              .replaceAll(
+                "{item.url}",
+                "https://monday.com"
+              )
+              .replaceAll(
+                "{update.body}",
+                "Exemple de commentaire"
+              ),
           }}
         />
       </section>
